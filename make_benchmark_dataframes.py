@@ -1,6 +1,8 @@
 from pathlib import Path
+import json
 import numpy as np
 import pandas as pd
+from config import taxonomy_map
 
 delimiter = "\t"
 root_benchmark_path_str = "/home/scott/Documents/MATLAB/CAFA2/benchmark/groundtruth/CAFA3/"
@@ -13,17 +15,8 @@ benchmark_files = root_benchmark_path.glob("leafonly_*.txt")
 # The "list" files are one file per species/evidence type and contain one protein per line.
 species_list_files = list((root_benchmark_path / "lists").glob("*_type1.txt"))
 
-# The 'list' files use non-standard short names, while the submitted predictions use official
-# taxon IDs, so we need a way to translate between the two:
-species_map = {
-    9606: 'HUMAN',
-    3702: 'ARATH',  # Arabidopsis
-    7227: 'DROME',  # Drosophila melanogaster
-    10090: 'MOUSE',  # Mus musculus
-    10116: 'RAT',  # Rattus norvegicus
-}
 
-species_map = {v:k for k, v in species_map.items()}
+taxonomy_map = {v:k for k, v in taxonomy_map.items()}
 
 for bf in benchmark_files:
     namespace = bf.stem.split("_")[-1]
@@ -43,7 +36,7 @@ for bf in benchmark_files:
             species_proteins = {line.rstrip() for line in list_file_handle}
             species_mask = namespace_df['protein'].isin(species_proteins)
             namespace_df.loc[species_mask, 'taxon'] = species_short_name
-            namespace_df.loc[species_mask, 'taxon_id'] = species_map.get(species_short_name, '')
+            namespace_df.loc[species_mask, 'taxon_id'] = taxonomy_map.get(species_short_name, '')
 
     '''
     At this point, we have a DataFrame with this form:
@@ -64,7 +57,7 @@ for bf in benchmark_files:
     Next, we want to propagate protein->term associations
     '''
 
-    dag_df_filepath = f"../v6/data/propagation/propagation_map_df_{namespace.upper()}.pkl"
+    dag_df_filepath = f"../code/CLEAN/v6/data/propagation/propagation_map_df_{namespace.upper()}.pkl"
     print(f"\tREADING {dag_df_filepath}")
     dag_df = pd.read_pickle(dag_df_filepath)
 
@@ -103,7 +96,7 @@ for bf in benchmark_files:
             propagated_benchmark_df.loc[row.protein, propagation_columns] = 1
 
         # Finally, we are going to merge the simple taxon_namespace_df DataFrame with the propagated_benchmark_df
-        taxon_namespace_df = pd.merge(taxon_namespace_df, propagated_benchmark_df, right_index=True, left_on='protein') #left_on='protein', right_on='index')
+        taxon_namespace_df = pd.merge(taxon_namespace_df, propagated_benchmark_df, right_index=True, left_on='protein')
         taxon_namespace_df.drop('term', axis='columns', inplace=True)
         taxon_namespace_df = taxon_namespace_df.groupby("protein").aggregate("max")
         ''' At this point, taxon_namespace_df has this form:
@@ -122,5 +115,24 @@ for bf in benchmark_files:
         +---------------+---------+------------+--------------+--------------+--------------+--------------+
         '''
 
-        pickle_filepath = f"./data/benchmark/{namespace.upper()}_{taxon}_{species_map.get(taxon, '')}_benchmark.pkl"
-        taxon_namespace_df.to_pickle(pickle_filepath)
+        #pickle_filepath = f"./data/benchmark/{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_benchmark.pkl"
+        #taxon_namespace_df.to_pickle(pickle_filepath)
+
+        benchmark_dict = {
+            "benchmark_taxon": taxon,
+            "benchmark_taxon_id": taxonomy_map.get("taxon"),
+            "benchmark_ontology": namespace,
+            "benchmark_ontology_term_count": len(dag_df.index),
+            "protein_annotations": {}
+        }
+
+        for protein, row in taxon_namespace_df.iterrows():
+            row_mask = row.iloc[2:].notna()
+            annotated_terms = tuple(row.iloc[2:][row_mask].index)
+
+            benchmark_dict["protein_annotations"][protein] = annotated_terms
+
+        json_filepath = f"./data/benchmark/{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_benchmark.json"
+        print(f"\tWRITING {json_filepath}")
+        with open(json_filepath, "w") as json_write_handle:
+            json.dump(benchmark_dict, json_write_handle)
