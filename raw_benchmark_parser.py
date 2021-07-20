@@ -17,6 +17,7 @@ The json files have this form:
 """
 from pathlib import Path
 import json
+#from goatools.obo_parser import GODag
 import numpy as np
 import pandas as pd
 from config import taxonomy_map
@@ -26,9 +27,15 @@ def main(
     root_benchmark_path_str: str,
     dag_df_directory_filepath: str,
     output_directory_filepath_str: str,
-    taxonomy_map: dict,
+    knowledge_type:int = 1, # either 1 for partial or 2 for none
+    taxonomy_map: dict = {},
     delimiter: str = "\t",
 ):
+
+    #obo_filepath = "./data/go_cafa3.obo"
+    #optional_attrs = ["relationship", "replaced_by", "consider"]
+    #optional_relationships = {'part_of', }
+    #dag = GODag(obo_filepath, optional_attrs=optional_attrs, load_obsolete=False, prt=None)
 
     root_benchmark_path = Path(root_benchmark_path_str)
 
@@ -38,7 +45,7 @@ def main(
 
     # The "list" files are one file per species/evidence type and contain one protein per line.
     # TODO: Handle types
-    species_list_files = list((root_benchmark_path / "lists").glob("*_type1.txt"))
+    species_list_files = list((root_benchmark_path / "lists").glob(f"*_type{knowledge_type}.txt"))
 
     taxonomy_map = {v: k for k, v in taxonomy_map.items()}
 
@@ -58,6 +65,7 @@ def main(
         # Loop over the per species/knowledge-type "list" files
         # in order to assign a taxon name and ID to each protein in the raw benchmark:
         for list_file in species_list_files_for_namespace:
+            print(f"READING {list_file}")
             namespace, species_short_name, type_str = list_file.stem.split("_")
 
             with open(list_file, "r") as list_file_handle:
@@ -127,6 +135,7 @@ def main(
                     propagation_columns = dag_df.columns[dag_df.loc[row.term, :] == 1]
                 except KeyError:
                     print(f"COULD NOT PROPAGATE {namespace} TERM {row.term}")
+
                     continue
                 # Populate the DataFrame with the propagation nodes for the given 'leaf' node:
                 propagated_benchmark_df.loc[row.protein, propagation_columns] = 1
@@ -177,7 +186,7 @@ def main(
             output_directory_path = Path(output_directory_filepath_str)
             output_directory_path.mkdir(exist_ok=True, parents=True)
             json_filepath = (
-                output_directory_path / f"{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_benchmark.json"
+                output_directory_path / f"{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_type_{knowledge_type}_benchmark.json"
             )
             print(f"\tWRITING {json_filepath}")
             with open(json_filepath, "w") as json_write_handle:
@@ -190,12 +199,14 @@ if __name__ == "__main__":
     root_benchmark_path_str = "./data/benchmark/raw"
     dag_df_directory_filepath = f"../code/CLEAN/v6/data/propagation/"  # propagation_map_df_{namespace.upper()}.pkl"
     dag_df_directory_filepath = "./data/propagation/"
+    knowledge_type = 1
+    output_directory_filepath = "./data/parsed_benchmark"
 
-    output_directory_filepath = "./parsed_benchmark_test"
     main(
         root_benchmark_path_str=root_benchmark_path_str,
         dag_df_directory_filepath=dag_df_directory_filepath,
         output_directory_filepath_str=output_directory_filepath,
+        knowledge_type=knowledge_type,
         taxonomy_map=taxonomy_map,
         delimiter=delimiter,
     )
