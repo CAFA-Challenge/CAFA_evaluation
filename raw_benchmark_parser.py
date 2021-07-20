@@ -174,9 +174,10 @@ def main(
                 benchmark_dict["protein_annotations"][protein] = annotated_terms
 
             # json_filepath = f"./data/benchmark/{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_benchmark.json"
+            output_directory_path = Path(output_directory_filepath_str)
+            output_directory_path.mkdir(exist_ok=True, parents=True)
             json_filepath = (
-                Path(output_directory_filepath_str)
-                / f"{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_benchmark.json"
+                output_directory_path / f"{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_benchmark.json"
             )
             print(f"\tWRITING {json_filepath}")
             with open(json_filepath, "w") as json_write_handle:
@@ -185,11 +186,12 @@ def main(
 
 if __name__ == "__main__":
     delimiter = "\t"
-    root_benchmark_path_str = (
-        "/home/scott/Documents/MATLAB/CAFA2/benchmark/groundtruth/CAFA3/"
-    )
+    root_benchmark_path_str = "/home/scott/Documents/MATLAB/CAFA2/benchmark/groundtruth/CAFA3/"
+    root_benchmark_path_str = "./data/benchmark/raw"
     dag_df_directory_filepath = f"../code/CLEAN/v6/data/propagation/"  # propagation_map_df_{namespace.upper()}.pkl"
-    output_directory_filepath = "./test"
+    dag_df_directory_filepath = "./data/propagation/"
+
+    output_directory_filepath = "./parsed_benchmark_test"
     main(
         root_benchmark_path_str=root_benchmark_path_str,
         dag_df_directory_filepath=dag_df_directory_filepath,
