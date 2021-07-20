@@ -10,11 +10,15 @@ import pandas as pd
 from config import taxonomy_map, ontologies
 
 
-def get_propagated_prediction_dataframe(prediction_df: pd.DataFrame, dag_df: pd.DataFrame):
+def get_propagated_prediction_dataframe(
+    prediction_df: pd.DataFrame, dag_df: pd.DataFrame
+):
     # Create a DataFrame joining the 'raw' prediction data with the DAG propagation DataFrame:
     term_ids = dag_df.columns.values
-    prediction_df = pd.merge(prediction_df, dag_df, right_index=True, left_on='term', how='left')
-    prediction_df.set_index('protein', inplace=True)
+    prediction_df = pd.merge(
+        prediction_df, dag_df, right_index=True, left_on="term", how="left"
+    )
+    prediction_df.set_index("protein", inplace=True)
 
     # identify columns for propagation:
     propagation_mask = prediction_df[term_ids] == 1
@@ -22,9 +26,7 @@ def get_propagated_prediction_dataframe(prediction_df: pd.DataFrame, dag_df: pd.
     # simultaneously drop the term and threshold columns. There are still multiple
     # rows per protein:
     prediction_df = prediction_df[term_ids].mask(
-        propagation_mask,
-        prediction_df["threshold"],
-        axis=0
+        propagation_mask, prediction_df["threshold"], axis=0
     )
 
     # Aggregate the rows on protein, keeping the max threshold value for each protein/term pair:
@@ -32,26 +34,33 @@ def get_propagated_prediction_dataframe(prediction_df: pd.DataFrame, dag_df: pd.
     return prediction_df
 
 
-def filter_dataframe(df: pd.DataFrame, filter_proteins:Optional[Iterable] = None, filter_terms: Optional[Iterable] = None):
-    # filter the raw_prediction_df by the benchmark proteins and the benchmark ontology terms:
+def filter_dataframe(
+    df: pd.DataFrame,
+    filter_proteins: Optional[Iterable] = None,
+    filter_terms: Optional[Iterable] = None,
+):
+    ''' FIlter the given DataFrame by the given proteins and the given ontology terms.
+    It is assumed that the DataFrame has proteins has indices and GO terms as columns.
+
+    '''
 
     if filter_proteins is not None:
         # TODO: Refactor the masking here to be less hokey:
-        protein_mask = df['protein'].tolist()
+        protein_mask = df["protein"].tolist()
         protein_mask = [v in filter_proteins for v in protein_mask]
         df = df[protein_mask]
     if filter_terms is not None:
         # TODO: This is fragile if the DataFrame columns change in anyway:
-        terms_mask = [v in filter_terms for v in df.loc[:, 'term']]
+        terms_mask = [v in filter_terms for v in df.loc[:, "term"]]
         df = df[terms_mask]
 
     return df
 
 
 def prediction_dataframe_to_dict(prediction_df: pd.DataFrame) -> dict:
-    '''
-    Converts a DataFrame of prediction data to a nested dictionary
-    structure with this shape:
+    """
+    Converts a DataFrame of prediction data (proteins as indices and GO terms as columns) to a nested dictionary
+    structure with this general form:
     {
        "T72270000115": {
           "GO:0000151": 0.01,
@@ -60,7 +69,7 @@ def prediction_dataframe_to_dict(prediction_df: pd.DataFrame) -> dict:
           "GO:0000790": 0.02,
           "GO:0005575": 0.3,
           ...
-    '''
+    """
 
     prediction_dict = {}
 
@@ -72,29 +81,41 @@ def prediction_dataframe_to_dict(prediction_df: pd.DataFrame) -> dict:
     return prediction_dict
 
 
-if __name__ == "__main__":
+def main(
+    predictions_parent_directory: str,
+    benchmark_parent_directory: str,
+    dag_df_parent_directory: str,
+    propagation_df_parent_directory: str,
+    output_parent_directory: str,
+    ontologies: Iterable,
+    prediction_file_delimiter: str,
+):
+    ''' Reads raw prediction data, filters the data based on benchmark data, propagates the annotations and writes
+    the resulting filtered, propagated annotation predictions with probability thresholds to json-formatted files.
+    '''
 
-    predictions_parent_directory = (
-        "/media/scott/data/cafa3_submissions/ZhangFreddolinoLab/"
-    )
-    prediction_file_delimiter = "\t"
-    benchmark_directory_path_str = "./data/benchmark/"
-    benchmark_directory_path = Path(benchmark_directory_path_str)
+
+    predictions_parent_path = Path(predictions_parent_directory)
+    benchmark_directory_path = Path(benchmark_parent_directory)
+    dag_df_directory_path = Path(dag_df_parent_directory)
+    output_directory_path = Path(output_parent_directory)
+    propagation_directory_path = Path(propagation_df_parent_directory)
 
     for ontology in ontologies:
 
-        dag_df_filepath = f"../code/CLEAN/v6/data/propagation/propagation_map_df_{ontology.upper()}.pkl"
+        dag_df_filepath = (
+            propagation_directory_path / f"propagation_map_df_{ontology.upper()}.pkl"
+        )
         dag_df = pd.read_pickle(dag_df_filepath)
 
-        benchmark_files = list(benchmark_directory_path.glob(f"{ontology}_*.pkl"))
+        #benchmark_files = list(benchmark_directory_path.glob(f"{ontology}_*.pkl"))
 
         print(f"PARSING {ontology}\n*********************\n")
-        propagation_map_df_filepath = (
-            f"../code/CLEAN/v6/data/propagation/propagation_map_df_{ontology}.pkl"
-        )
+        # propagation_map_df_filepath = (
+        #    f"../code/CLEAN/v6/data/propagation/propagation_map_df_{ontology}.pkl"
+        # )
 
-        prediction_path = Path(predictions_parent_directory)
-        prediction_files = prediction_path.glob("*.txt")
+        prediction_files = predictions_parent_path.glob("*.txt")
 
         for prediction_file in prediction_files:
             lab, model, taxon_id, *rest = prediction_file.stem.split("_")
@@ -104,13 +125,20 @@ if __name__ == "__main__":
 
             # find the relevant benchmark DataFrame:
             try:
-                benchmark_file = list(benchmark_directory_path.glob(f"{ontology}_*_{taxon_id}_benchmark.pkl"))[0]
+                benchmark_file = list(
+                    benchmark_directory_path.glob(
+                        f"{ontology}_*_{taxon_id}_benchmark.json"
+                    )
+                )[0]
             except IndexError:
                 # No benchmark found
                 # TODO: Fix this exception, it's likely due to bad benchmark parsing
                 continue
 
-            taxon_ontology_benchmark_df = pd.read_pickle(benchmark_file)
+            #taxon_ontology_benchmark_df = pd.read_pickle(benchmark_file)
+            with open(benchmark_file, "r") as read_benchmark_handle:
+                benchmark = json.load(read_benchmark_handle)
+
 
             raw_prediction_df = pd.read_csv(
                 prediction_file,
@@ -123,17 +151,23 @@ if __name__ == "__main__":
             )
 
             # TODO: This is fragile if the DataFrame columns change in anyway:
-            benchmark_terms = taxon_ontology_benchmark_df.columns[2:]
-            benchmark_proteins = taxon_ontology_benchmark_df.index.tolist()
+            #benchmark_terms = taxon_ontology_benchmark_df.columns[2:]
+            #benchmark_proteins = taxon_ontology_benchmark_df.index.tolist()
+
+            benchmark_terms = {v2 for v in benchmark.get("protein_annotations").values() for v2 in v}
+            benchmark_proteins = benchmark.get("protein_annotations").keys()
+
             raw_prediction_df = filter_dataframe(
                 raw_prediction_df,
                 filter_proteins=benchmark_proteins,
-                filter_terms=benchmark_terms
+                filter_terms=benchmark_terms,
             )
 
-            raw_prediction_df = get_propagated_prediction_dataframe(prediction_df=raw_prediction_df, dag_df=dag_df)
+            raw_prediction_df = get_propagated_prediction_dataframe(
+                prediction_df=raw_prediction_df, dag_df=dag_df
+            )
 
-            '''
+            """
             At this point, we have a DataFrame with this form:
             +---------------+--------------+--------------+--------------+--------------+--------------+--------------+
             | protein       |   GO:0000015 |   GO:0000109 |   GO:0000110 |   GO:0000111 |   GO:0000112 |   GO:0000113 |
@@ -148,11 +182,32 @@ if __name__ == "__main__":
             +---------------+--------------+--------------+--------------+--------------+--------------+--------------+
             | T100900000453 |            0 |            0 |            0 |            0 |            0 |            0 |
             +---------------+--------------+--------------+--------------+--------------+--------------+--------------+
-            '''
+            """
             # Convert the DataFrame to a more succint dictionary:
             prediction_dict = prediction_dataframe_to_dict(raw_prediction_df)
 
-            output_filepath = f"./data/ZhangFreddolinoLab/{prediction_file.stem}_{ontology}.json"
+            output_filepath = (
+                output_directory_path / f"{prediction_file.stem}_{ontology}.json"
+            )
             print(f"\tWRITING {output_filepath}")
-            with open(output_filepath, 'w') as write_handle:
+            with open(output_filepath, "w") as write_handle:
                 json.dump(prediction_dict, write_handle)
+
+
+if __name__ == "__main__":
+
+    predictions_parent_directory = "/media/airport/cafa3_submissions/ZhangFreddolinoLab"
+    prediction_file_delimiter = "\t"
+    benchmark_directory_path_str = "./data/parsed_benchmark"
+    # benchmark_directory_path = Path(benchmark_directory_path_str)
+    dag_directory = "./data/dag_ia"
+    # main(predictions_parent_directory, benchmark_directory_path, )
+    main(
+        predictions_parent_directory,
+        benchmark_directory_path_str,
+        dag_directory,
+        "./data/propagation/",
+        "./data/predictions",
+        ontologies,
+        prediction_file_delimiter,
+    )
