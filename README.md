@@ -9,7 +9,7 @@ DataFrames, one per relevant GO ontology namespace that are used for propagating
 To generate these files yourself, see `generate_propagation_map_dataframe.py`.
 
 2. Obtain or generate weighted DAG files (one per GO ontology namespace). These are pickled Pandas DataFrame files containing
-the Information Content data for the relevant DAG nodes. To generate your own weighted DAG files, see `generate_weight_matrix.py`
+the Information Content data for the relevant DAG nodes. To generate your own weighted DAG files, see `generate_information_content_matrices.py`
 
 3. Parse raw benchmark data into json-formatted per-species, per-ontology (CCO, MFO, BPO, etc) files.
 This step uses `raw_benchmark_parser.py`
