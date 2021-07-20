@@ -7,13 +7,13 @@ if __name__ == "__main__":
     NAMESPACE = "cellular_component"
     NAMESPACE_SHORT = "CCO"
 
-    NAMESPACE = "biological_process"
-    NAMESPACE_SHORT = "BPO"
+    #NAMESPACE = "biological_process"
+    #NAMESPACE_SHORT = "BPO"
 
-    NAMESPACE = "molecular_function"
-    NAMESPACE_SHORT = "MFO"
+    #NAMESPACE = "molecular_function"
+    #NAMESPACE_SHORT = "MFO"
 
-    obo_filepath = "/home/scott/Documents/MATLAB/CAFA2/ontology/CAFA3/go_cafa3.obo"
+    obo_filepath = "./data/go_cafa3.obo"
     output_filepath = f"./data/propagation/propagation_map_df_{NAMESPACE_SHORT}.pkl"
 
     optional_attrs = ["relationship", "replaced_by", "consider"]
