@@ -87,6 +87,7 @@ def main(
     dag_df_parent_directory: str,
     propagation_df_parent_directory: str,
     output_parent_directory: str,
+    knowledge_type_id: int,
     ontologies: Iterable,
     prediction_file_delimiter: str,
 ):
@@ -127,12 +128,13 @@ def main(
             try:
                 benchmark_file = list(
                     benchmark_directory_path.glob(
-                        f"{ontology}_*_{taxon_id}_benchmark.json"
+                        f"{ontology}_*_{taxon_id}_type_{knowledge_type_id}_benchmark.json"
                     )
                 )[0]
             except IndexError:
                 # No benchmark found
                 # TODO: Fix this exception, it's likely due to bad benchmark parsing
+                print(f"NO BENCHMARK FOUND FOR {ontology} AND {taxon_id}")
                 continue
 
             #taxon_ontology_benchmark_df = pd.read_pickle(benchmark_file)
@@ -202,12 +204,15 @@ if __name__ == "__main__":
     # benchmark_directory_path = Path(benchmark_directory_path_str)
     dag_directory = "./data/dag_ia"
     # main(predictions_parent_directory, benchmark_directory_path, )
+    knowledge_type = 1
+
     main(
         predictions_parent_directory,
         benchmark_directory_path_str,
         dag_directory,
         "./data/propagation/",
         "./data/predictions",
+        knowledge_type,
         ontologies,
         prediction_file_delimiter,
     )
