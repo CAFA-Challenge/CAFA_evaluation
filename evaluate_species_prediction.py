@@ -5,12 +5,8 @@ import numpy as np
 import pandas as pd
 
 
-def main():
-    prediction_filepath_str = (
-        "data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json"
-    )
-    benchmark_filepath_str = "data/benchmark/CCO_DROME_7227_benchmark.json"
-    with open(prediction_filepath_str, "r") as prediction_handle:
+def main(prediction_data_filepath: str, benchmark_data_filepath: str):
+    with open(prediction_data_filepath, "r") as prediction_handle:
         predictions = json.load(prediction_handle)
 
     with open(benchmark_filepath_str, "r") as benchmark_handle:
@@ -220,5 +216,10 @@ def get_confusion_matrix_dataframe(
 
 if __name__ == "__main__":
 
-    result = main()
+    prediction_filepath_str = (
+        "data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json"
+    )
+    #benchmark_filepath_str = "data/benchmark/CCO_DROME_7227_benchmark.json"
+    benchmark_filepath_str = "./parsed_benchmark_test/CCO_HUMAN_9606_benchmark.json"
+    result = main(prediction_filepath_str, benchmark_filepath_str)
     print(result)
