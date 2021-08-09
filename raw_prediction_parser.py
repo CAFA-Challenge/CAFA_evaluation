@@ -39,7 +39,10 @@ def filter_dataframe(
     filter_proteins: Optional[Iterable] = None,
     filter_terms: Optional[Iterable] = None,
 ):
-    # filter the raw_prediction_df by the benchmark proteins and the benchmark ontology terms:
+    ''' FIlter the given DataFrame by the given proteins and the given ontology terms.
+    It is assumed that the DataFrame has proteins has indices and GO terms as columns.
+
+    '''
 
     if filter_proteins is not None:
         # TODO: Refactor the masking here to be less hokey:
@@ -56,8 +59,8 @@ def filter_dataframe(
 
 def prediction_dataframe_to_dict(prediction_df: pd.DataFrame) -> dict:
     """
-    Converts a DataFrame of prediction data to a nested dictionary
-    structure with this shape:
+    Converts a DataFrame of prediction data (proteins as indices and GO terms as columns) to a nested dictionary
+    structure with this general form:
     {
        "T72270000115": {
           "GO:0000151": 0.01,
@@ -79,29 +82,38 @@ def prediction_dataframe_to_dict(prediction_df: pd.DataFrame) -> dict:
 
 
 def main(
-    raw_prediction_parent_directory: str,
-    benchmark_directory: str,
-    dags_directory: str,
-    output_directory: str,
-    prediction_file_delimiter: str = " ",
+    predictions_parent_directory: str,
+    benchmark_parent_directory: str,
+    dag_df_parent_directory: str,
+    propagation_df_parent_directory: str,
+    output_parent_directory: str,
+    knowledge_type_id: int,
+    ontologies: Iterable,
+    prediction_file_delimiter: str,
 ):
+    ''' Reads raw prediction data, filters the data based on benchmark data, propagates the annotations and writes
+    the resulting filtered, propagated annotation predictions with probability thresholds to json-formatted files.
+    '''
 
-    benchmark_directory_path = Path(benchmark_directory_path_str)
+
+    predictions_parent_path = Path(predictions_parent_directory)
+    benchmark_directory_path = Path(benchmark_parent_directory)
+    dag_df_directory_path = Path(dag_df_parent_directory)
+    output_directory_path = Path(output_parent_directory)
+    propagation_directory_path = Path(propagation_df_parent_directory)
 
     for ontology in ontologies:
 
         dag_df_filepath = (
-            Path(dags_directory) / f"propagation_map_df_{ontology.upper()}.pkl"
+            propagation_directory_path / f"propagation_map_df_{ontology.upper()}.pkl"
         )
-        # dag_df_filepath = f"../code/CLEAN/v6/data/propagation/propagation_map_df_{ontology.upper()}.pkl"
         dag_df = pd.read_pickle(dag_df_filepath)
 
-        benchmark_files = list(benchmark_directory_path.glob(f"{ontology}_*.pkl"))
+        #benchmark_files = list(benchmark_directory_path.glob(f"{ontology}_*.pkl"))
 
         print(f"PARSING {ontology}\n*********************\n")
 
-        prediction_path = Path(predictions_parent_directory)
-        prediction_files = prediction_path.glob("*.txt")
+        prediction_files = predictions_parent_path.glob("*.txt")
 
         for prediction_file in prediction_files:
             lab, model, taxon_id, *rest = prediction_file.stem.split("_")
@@ -113,15 +125,19 @@ def main(
             try:
                 benchmark_file = list(
                     benchmark_directory_path.glob(
-                        f"{ontology}_*_{taxon_id}_benchmark.pkl"
+                        f"{ontology}_*_{taxon_id}_type_{knowledge_type_id}_benchmark.json"
                     )
                 )[0]
             except IndexError:
                 # No benchmark found
                 # TODO: Fix this exception, it's likely due to bad benchmark parsing
+                print(f"NO BENCHMARK FOUND FOR {ontology} AND {taxon_id}")
                 continue
 
-            taxon_ontology_benchmark_df = pd.read_pickle(benchmark_file)
+            #taxon_ontology_benchmark_df = pd.read_pickle(benchmark_file)
+            with open(benchmark_file, "r") as read_benchmark_handle:
+                benchmark = json.load(read_benchmark_handle)
+
 
             raw_prediction_df = pd.read_csv(
                 prediction_file,
@@ -134,8 +150,12 @@ def main(
             )
 
             # TODO: This is fragile if the DataFrame columns change in anyway:
-            benchmark_terms = taxon_ontology_benchmark_df.columns[2:]
-            benchmark_proteins = taxon_ontology_benchmark_df.index.tolist()
+            #benchmark_terms = taxon_ontology_benchmark_df.columns[2:]
+            #benchmark_proteins = taxon_ontology_benchmark_df.index.tolist()
+
+            benchmark_terms = {v2 for v in benchmark.get("protein_annotations").values() for v2 in v}
+            benchmark_proteins = benchmark.get("protein_annotations").keys()
+
             raw_prediction_df = filter_dataframe(
                 raw_prediction_df,
                 filter_proteins=benchmark_proteins,
@@ -169,6 +189,9 @@ def main(
             output_directory_path = Path(output_directory)
             output_directory_path.mkdir(parents=True, exist_ok=True)
             output_filepath = output_directory_path / f"{prediction_file.stem}_{ontology}.json"
+            output_filepath = (
+                output_directory_path / f"{prediction_file.stem}_{ontology}.json"
+            )
             print(f"\tWRITING {output_filepath}")
             with open(output_filepath, "w") as write_handle:
                 json.dump(prediction_dict, write_handle)
@@ -176,17 +199,21 @@ def main(
 
 if __name__ == "__main__":
 
-    predictions_parent_directory = (
-        "/media/scott/data/cafa3_submissions/ZhangFreddolinoLab/"
-    )
+    predictions_parent_directory = "/media/airport/cafa3_submissions/ZhangFreddolinoLab"
     prediction_file_delimiter = "\t"
-    benchmark_directory_path_str = "./data/benchmark/"
-    dags_dir = "../code/CLEAN/v6/data/propagation/"
-    output_directory = "./test2"
+    benchmark_directory_path_str = "./data/parsed_benchmark"
+    # benchmark_directory_path = Path(benchmark_directory_path_str)
+    dag_directory = "./data/dag_ia"
+    # main(predictions_parent_directory, benchmark_directory_path, )
+    knowledge_type = 1
+
     main(
-        raw_prediction_parent_directory=predictions_parent_directory,
-        benchmark_directory=benchmark_directory_path_str,
-        dags_directory=dags_dir,
-        output_directory=output_directory,
-        prediction_file_delimiter=prediction_file_delimiter,
+        predictions_parent_directory,
+        benchmark_directory_path_str,
+        dag_directory,
+        "./data/propagation/",
+        "./data/predictions",
+        knowledge_type,
+        ontologies,
+        prediction_file_delimiter,
     )
