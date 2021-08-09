@@ -5,23 +5,6 @@ import numpy as np
 import pandas as pd
 
 
-def main():
-    prediction_filepath_str = (
-        "data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json"
-    )
-    benchmark_filepath_str = "data/benchmark/CCO_DROME_7227_benchmark.json"
-    with open(prediction_filepath_str, "r") as prediction_handle:
-        predictions = json.load(prediction_handle)
-
-    with open(benchmark_filepath_str, "r") as benchmark_handle:
-        benchmark = json.load(benchmark_handle)
-
-    metrics_df = get_confusion_matrix_dataframe(
-        prediction_dict=predictions, benchmark_dict=benchmark
-    )
-    return metrics_df
-
-
 def initialize_proteins_and_thresholds_dataframe(
     proteins: Iterable, thresholds: Iterable
 ) -> pd.DataFrame:
@@ -65,7 +48,7 @@ def initialize_proteins_and_thresholds_dataframe(
         ["protein", "threshold"], drop=True, inplace=True
     )
 
-    """ At this point, we have a DataFrame with this form:
+    """ At this point, protein_and_threshold_df has this form:
     +------------------------+------+------+------+------+
     |                        |   tp |   fp |   fn |   tn |
     +========================+======+======+======+======+
@@ -97,17 +80,20 @@ def get_confusion_matrix_terms(predicted_terms: set, benchmark_terms: set) -> di
         "FN": false_negative_terms,
     }
 
-def calculate_weighted_confusion_matrix(predicted_terms: set, benchmark_terms: set, node_weights_df: pd.DataFrame) -> dict:
-    ''' Calculates the weighted precision and recall for two sets of terms
+
+def calculate_weighted_confusion_matrix(
+    predicted_terms: set, benchmark_terms: set, node_weights_df: pd.DataFrame
+) -> dict:
+    """ Calculates the weighted precision and recall for two sets of terms
     Weighted precision and recall rely on the information content (IC) of relevant terms (nodes).
     Here we retrieve the IC for the relevant nodes from the node_weights_df.
-    '''
+    """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
 
 
 def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> dict:
     """ Calculates true positive, false positive and false negative for two sets of terms.
-    Does not calcuate true negative.
+    Does not calculate true negative.
     """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
     true_positive = len(cm_terms["TP"])
@@ -120,7 +106,7 @@ def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> di
 def get_confusion_matrix_dataframe(
     prediction_dict: dict, benchmark_dict: dict
 ) -> pd.DataFrame:
-    ''' Constructs a pandas DataFrame with a row for each protein/threshold pair.
+    """ Constructs a pandas.DataFrame with a row for each protein/threshold pair.
     The proteins are sourced from the benchmark_dict and the thresholds are sourced
     from the prediction dict.
    
@@ -145,7 +131,7 @@ def get_confusion_matrix_dataframe(
         }
     }
     
-    '''
+    """
 
     # Get all threshold values from the nested dictionaries in the prediction data:
     distinct_prediction_thresholds = sorted(
@@ -189,10 +175,10 @@ def get_confusion_matrix_dataframe(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
             )
-            true_negative = benchmark_ontology_term_count - sum(conf_matrix.values())
             protein_and_threshold_df.loc[protein, threshold].tp = conf_matrix["TP"]
             protein_and_threshold_df.loc[protein, threshold].fp = conf_matrix["FP"]
             protein_and_threshold_df.loc[protein, threshold].fn = conf_matrix["FN"]
+            true_negative = benchmark_ontology_term_count - sum(conf_matrix.values())
             protein_and_threshold_df.loc[protein, threshold].tn = true_negative
 
     # Lastly, add some metadata to each row:
@@ -218,7 +204,64 @@ def get_confusion_matrix_dataframe(
     return protein_and_threshold_df
 
 
-if __name__ == "__main__":
+def evaluate_species(
+    prediction_filepath_str: str, benchmark_filepath_str: str
+) -> pd.DataFrame:
+    with open(prediction_filepath_str, "r") as prediction_handle:
+        predictions = json.load(prediction_handle)
 
-    result = main()
-    print(result)
+    with open(benchmark_filepath_str, "r") as benchmark_handle:
+        benchmark = json.load(benchmark_handle)
+
+    metrics_df = get_confusion_matrix_dataframe(
+        prediction_dict=predictions, benchmark_dict=benchmark
+    )
+    return metrics_df
+
+
+def main(
+    predictions_parent_directory: str,
+    benchmark_parent_directory: str,
+    model_id: int,
+    ontologies: Iterable = ("CCO", "BPO"),
+):
+    predictions_path = Path(predictions_parent_directory)
+    benchmark_path = Path(benchmark_parent_directory)
+
+    for ontology in ontologies:
+        print(ontology)
+        prediction_files = list(predictions_path.glob(f"*{model_id}_*{ontology}*json"))
+        benchmark_files = list(benchmark_path.glob(f"*{ontology}*json"))
+
+        for benchmark_file in benchmark_files:
+            _, taxon_str, taxon_id, *rest = benchmark_file.stem.split("_")
+            try:
+                taxon_id = int(taxon_id)
+            except ValueError:
+                # No taxon_id found in file name
+                continue
+
+            prediction_file = [f for f in prediction_files if str(taxon_id) in str(f)]
+            # should only find one file:
+            if len(prediction_file) == 1:
+                prediction_file = prediction_file[0]
+            else:
+                continue
+
+            print(benchmark_file)
+            print(ontology, taxon_str, taxon_id)
+            print(prediction_file)
+            print("=====================")
+
+            yield evaluate_species(prediction_file, benchmark_file)
+
+
+if __name__ == "__main__":
+    prediction_filepath_str = "data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json"
+    benchmark_filepath_str = "data/benchmark/CCO_DROME_7227_benchmark.json"
+    prediction_filepath_str = "data/ZhangFreddolinoLab"
+    benchmark_filepath_str = "data/benchmark"
+    model_id = 1
+
+    for result in main(prediction_filepath_str, benchmark_filepath_str, model_id):
+        print(result)
