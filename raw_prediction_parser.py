@@ -186,9 +186,9 @@ def main(
             prediction_dict = prediction_dataframe_to_dict(raw_prediction_df)
 
             # output_filepath = f"./data/ZhangFreddolinoLab/{prediction_file.stem}_{ontology}.json"
-            output_directory_path = Path(output_directory)
+            #output_directory_path = Path(output_directory)
             output_directory_path.mkdir(parents=True, exist_ok=True)
-            output_filepath = output_directory_path / f"{prediction_file.stem}_{ontology}.json"
+            #output_filepath = output_directory_path / f"{prediction_file.stem}_{ontology}.json"
             output_filepath = (
                 output_directory_path / f"{prediction_file.stem}_{ontology}.json"
             )
@@ -198,7 +198,7 @@ def main(
 
 
 if __name__ == "__main__":
-
+    '''
     predictions_parent_directory = "/media/airport/cafa3_submissions/ZhangFreddolinoLab"
     prediction_file_delimiter = "\t"
     benchmark_directory_path_str = "./data/parsed_benchmark"
@@ -206,14 +206,29 @@ if __name__ == "__main__":
     dag_directory = "./data/dag_ia"
     # main(predictions_parent_directory, benchmark_directory_path, )
     knowledge_type = 1
+    '''
 
-    main(
-        predictions_parent_directory,
-        benchmark_directory_path_str,
-        dag_directory,
-        "./data/propagation/",
-        "./data/predictions",
-        knowledge_type,
-        ontologies,
-        prediction_file_delimiter,
-    )
+    import yaml
+
+    config_filepath = "./parser_config.yml"
+
+    with open(config_filepath, "r") as config_handle:
+        config = yaml.load(config_handle, Loader=yaml.BaseLoader)
+        benchmark_directory = config.get("benchmark_directory")
+        dag_directory = config.get("dag_directory")
+        predictions_directory = config.get("predictions_directory")
+        prediction_file_delimiter = config.get("prediction_file_delimiter", " ")
+        knowledge_type = config.get("knowledge_type")
+        propagation_df_directory = config.get("propagation_df_directory")
+        output_directory = config.get("output_directory")
+
+        main(
+            predictions_directory,
+            benchmark_directory,
+            dag_directory,
+            propagation_df_directory,
+            output_directory,
+            knowledge_type,
+            ontologies,
+            prediction_file_delimiter,
+        )

@@ -8,7 +8,7 @@ import pandas as pd
 def initialize_proteins_and_thresholds_dataframe(
     proteins: Iterable, thresholds: Iterable
 ) -> pd.DataFrame:
-    """ Creates a pandas.DataFrame that will have one row per protein/threshold pair.
+    """Creates a pandas.DataFrame that will have one row per protein/threshold pair.
     # It will only include the thresholds that actually exist in the prediction data and not a
     # complete range of possible thresholds:
     :param proteins:
@@ -65,10 +65,10 @@ def initialize_proteins_and_thresholds_dataframe(
 
 
 def get_confusion_matrix_terms(predicted_terms: set, benchmark_terms: set) -> dict:
-    """ For two given sets of terms, compute and return:
-        * terms for the true positive set
-        * terms for the false positive set
-        * terms for the false_negative set
+    """For two given sets of terms, compute and return:
+    * terms for the true positive set
+    * terms for the false positive set
+    * terms for the false_negative set
     """
     true_positive_terms = predicted_terms & benchmark_terms
     false_positive_terms = predicted_terms - benchmark_terms
@@ -84,7 +84,7 @@ def get_confusion_matrix_terms(predicted_terms: set, benchmark_terms: set) -> di
 def calculate_weighted_confusion_matrix(
     predicted_terms: set, benchmark_terms: set, node_weights_df: pd.DataFrame
 ) -> dict:
-    """ Calculates the weighted precision and recall for two sets of terms
+    """Calculates the weighted precision and recall for two sets of terms
     Weighted precision and recall rely on the information content (IC) of relevant terms (nodes).
     Here we retrieve the IC for the relevant nodes from the node_weights_df.
     """
@@ -92,7 +92,7 @@ def calculate_weighted_confusion_matrix(
 
 
 def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> dict:
-    """ Calculates true positive, false positive and false negative for two sets of terms.
+    """Calculates true positive, false positive and false negative for two sets of terms.
     Does not calculate true negative.
     """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
@@ -106,10 +106,10 @@ def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> di
 def get_confusion_matrix_dataframe(
     prediction_dict: dict, benchmark_dict: dict
 ) -> pd.DataFrame:
-    """ Constructs a pandas.DataFrame with a row for each protein/threshold pair.
+    """Constructs a pandas.DataFrame with a row for each protein/threshold pair.
     The proteins are sourced from the benchmark_dict and the thresholds are sourced
     from the prediction dict.
-   
+
     The prediction_dict maps proteins to terms and threshold values and should have this form:
     {
         "T72270000115": {
@@ -130,7 +130,7 @@ def get_confusion_matrix_dataframe(
              "T72270000115": ["GO:0000003", "GO:0007276", "GO:0007283", "GO:0008150", "GO:0010468", ...],
         }
     }
-    
+
     """
 
     # Get all threshold values from the nested dictionaries in the prediction data:
@@ -229,7 +229,6 @@ def main(
     benchmark_path = Path(benchmark_parent_directory)
 
     for ontology in ontologies:
-        print(ontology)
         prediction_files = list(predictions_path.glob(f"*{model_id}_*{ontology}*json"))
         benchmark_files = list(benchmark_path.glob(f"*{ontology}*json"))
 
@@ -248,20 +247,36 @@ def main(
             else:
                 continue
 
-            print(benchmark_file)
-            print(ontology, taxon_str, taxon_id)
-            print(prediction_file)
-            print("=====================")
-
             yield evaluate_species(prediction_file, benchmark_file)
 
 
 if __name__ == "__main__":
-    prediction_filepath_str = "data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json"
+    """
+    prediction_filepath_str = (
+        "data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json"
+    )
     benchmark_filepath_str = "data/benchmark/CCO_DROME_7227_benchmark.json"
     prediction_filepath_str = "data/ZhangFreddolinoLab"
-    benchmark_filepath_str = "data/benchmark"
+    benchmark_filepath_str = "data/parsed_benchmark"
     model_id = 1
+    """
 
-    for result in main(prediction_filepath_str, benchmark_filepath_str, model_id):
-        print(result)
+    import yaml
+
+    with open("./parser_config.yml", "r") as config_handle:
+        config = yaml.load(config_handle, Loader=yaml.BaseLoader)
+        prediction_filepath_str, benchmark_filepath_str, model_id, ontologies = [
+            config[key]
+            for key in (
+                "prediction_filepath",
+                "benchmark_filepath",
+                "model_id",
+                "ontologies",
+            )
+        ]
+
+        for result in main(
+            prediction_filepath_str, benchmark_filepath_str, model_id, ontologies
+        ):
+            print(result)
+            print("\n\n")

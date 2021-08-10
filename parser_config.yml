@@ -1,0 +1,15 @@
+#prediction_filepath_str: data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json
+#benchmark_filepath_str: data/benchmark/CCO_DROME_7227_benchmark.json
+prediction_filepath: data/predictions2
+benchmark_filepath: data/parsed_benchmark
+model_id: 1
+ontologies: [CCO, BPO]
+
+
+benchmark_directory: ./data/parsed_benchmark
+dag_directory: ./data/dag_ia
+predictions_directory: /media/airport/cafa3_submissions/ZhangFreddolinoLab
+prediction_file_delimiter: \t
+knowledge_type: 1
+propagation_df_directory: ./data/propagation
+output_directory: ./data/predictions2
