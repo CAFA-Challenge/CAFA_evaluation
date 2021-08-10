@@ -225,6 +225,12 @@ def main(
     model_id: int,
     ontologies: Iterable = ("CCO", "BPO"),
 ):
+    """ A generator function which yields pandas DataFrames. Each DataFrame contains evaluation metrics
+    for a specific species + ontology pairing.
+
+
+    """
+
     predictions_path = Path(predictions_parent_directory)
     benchmark_path = Path(benchmark_parent_directory)
 
@@ -251,29 +257,15 @@ def main(
 
 
 if __name__ == "__main__":
-    """
-    prediction_filepath_str = (
-        "data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json"
-    )
-    benchmark_filepath_str = "data/benchmark/CCO_DROME_7227_benchmark.json"
-    prediction_filepath_str = "data/ZhangFreddolinoLab"
-    benchmark_filepath_str = "data/parsed_benchmark"
-    model_id = 1
-    """
 
     import yaml
 
     with open("./parser_config.yml", "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
-        prediction_filepath_str, benchmark_filepath_str, model_id, ontologies = [
-            config[key]
-            for key in (
-                "prediction_filepath",
-                "benchmark_filepath",
-                "model_id",
-                "ontologies",
-            )
-        ]
+        prediction_filepath_str = config.get("prediction_filepath")
+        benchmark_filepath_str = config.get("benchmark_filepath")
+        model_id = config.get("model_id")
+        ontologies = config.get("ontologies")
 
         for result in main(
             prediction_filepath_str, benchmark_filepath_str, model_id, ontologies
