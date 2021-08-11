@@ -16,17 +16,20 @@ def initialize_proteins_and_thresholds_dataframe(
     :return:
     """
 
-    matrix = np.zeros(((len(proteins) * len(thresholds)), 6))
+    matrix = np.zeros(((len(proteins) * len(thresholds)), 9))
     protein_and_threshold_df = pd.DataFrame(
-        data=matrix, columns=("protein", "threshold", "tp", "fp", "fn", "tn")
+        data=matrix, columns=("protein", "threshold", "tp_ia", "fp_ia", "fn_ia", "tp", "fp", "fn", "tn")
     )
     df_datatypes = {
         "protein": "str",
         "threshold": "float",
-        "tp": "int",
-        "fp": "int",
-        "fn": "int",
-        "tn": "int",
+        "tp_ia": "float",
+        "fp_ia": "float",
+        "fn_ia": "float",
+        "tp": "float",
+        "fp": "float",
+        "fn": "float",
+        "tn": "float",
     }
     protein_and_threshold_df = protein_and_threshold_df.astype(df_datatypes)
 
@@ -82,13 +85,18 @@ def get_confusion_matrix_terms(predicted_terms: set, benchmark_terms: set) -> di
 
 
 def calculate_weighted_confusion_matrix(
-    predicted_terms: set, benchmark_terms: set, node_weights_df: pd.DataFrame
+    predicted_terms: set, benchmark_terms: set, ia_df: pd.DataFrame
 ) -> dict:
     """Calculates the weighted precision and recall for two sets of terms
     Weighted precision and recall rely on the information content (IC) of relevant terms (nodes).
     Here we retrieve the IC for the relevant nodes from the node_weights_df.
     """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
+
+    tp_info_accretion = sum([ia_df.loc[term, 'ia'] for term in cm_terms.get('TP', [])])
+    fp_info_accretion = sum([ia_df.loc[term, 'ia'] for term in cm_terms.get('FP', [])])
+    fn_info_accretion = sum([ia_df.loc[term, 'ia'] for term in cm_terms.get('FN', [])])
+    return {"TP": tp_info_accretion, "FP": fp_info_accretion, "FN": fn_info_accretion}
 
 
 def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> dict:
@@ -104,7 +112,7 @@ def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> di
 
 
 def get_confusion_matrix_dataframe(
-    prediction_dict: dict, benchmark_dict: dict
+    prediction_dict: dict, benchmark_dict: dict, ia_df: pd.DataFrame
 ) -> pd.DataFrame:
     """Constructs a pandas.DataFrame with a row for each protein/threshold pair.
     The proteins are sourced from the benchmark_dict and the thresholds are sourced
@@ -164,6 +172,7 @@ def get_confusion_matrix_dataframe(
     # Next, populate the DataFrame with the confusion matrix values
     for threshold in distinct_prediction_thresholds:
         for protein in benchmark_proteins:
+
             predicted_terms = prediction_dict.get(protein, {})
             # Limit the predictions by the threshold at hand:
             predicted_annotations = {
@@ -171,15 +180,25 @@ def get_confusion_matrix_dataframe(
             }
             benchmark_protein_annotation = set(benchmark_annotations.get(protein))
 
-            conf_matrix = calculate_confusion_matrix(
+            confusion_matrix = calculate_confusion_matrix(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
             )
-            protein_and_threshold_df.loc[protein, threshold].tp = conf_matrix["TP"]
-            protein_and_threshold_df.loc[protein, threshold].fp = conf_matrix["FP"]
-            protein_and_threshold_df.loc[protein, threshold].fn = conf_matrix["FN"]
-            true_negative = benchmark_ontology_term_count - sum(conf_matrix.values())
+            protein_and_threshold_df.loc[protein, threshold].tp = confusion_matrix["TP"]
+            protein_and_threshold_df.loc[protein, threshold].fp = confusion_matrix["FP"]
+            protein_and_threshold_df.loc[protein, threshold].fn = confusion_matrix["FN"]
+            true_negative = benchmark_ontology_term_count - sum(confusion_matrix.values())
             protein_and_threshold_df.loc[protein, threshold].tn = true_negative
+
+            ia_sums = calculate_weighted_confusion_matrix(
+                predicted_terms=predicted_annotations,
+                benchmark_terms=benchmark_protein_annotation,
+                ia_df=ia_df
+            )
+            protein_and_threshold_df.loc[protein, threshold].tp_ia = ia_sums["TP"]
+            protein_and_threshold_df.loc[protein, threshold].fp_ia = ia_sums["FP"]
+            protein_and_threshold_df.loc[protein, threshold].fn_ia = ia_sums["FN"]
+
 
     # Lastly, add some metadata to each row:
     protein_and_threshold_df.insert(0, "taxon", benchmark_taxon)
@@ -205,7 +224,7 @@ def get_confusion_matrix_dataframe(
 
 
 def evaluate_species(
-    prediction_filepath_str: str, benchmark_filepath_str: str
+    prediction_filepath_str: str, benchmark_filepath_str: str, ia_df: pd.DataFrame
 ) -> pd.DataFrame:
     with open(prediction_filepath_str, "r") as prediction_handle:
         predictions = json.load(prediction_handle)
@@ -214,7 +233,7 @@ def evaluate_species(
         benchmark = json.load(benchmark_handle)
 
     metrics_df = get_confusion_matrix_dataframe(
-        prediction_dict=predictions, benchmark_dict=benchmark
+        prediction_dict=predictions, benchmark_dict=benchmark, ia_df=ia_df
     )
     return metrics_df
 
@@ -222,19 +241,36 @@ def evaluate_species(
 def main(
     predictions_parent_directory: str,
     benchmark_parent_directory: str,
+    ia_parent_directory: str,
     model_id: int,
     ontologies: Iterable = ("CCO", "BPO"),
 ):
     """ A generator function which yields pandas DataFrames. Each DataFrame contains evaluation metrics
     for a specific species + ontology pairing.
-
+    
+    The yielded DataFrames have the following form with one row per protein + threshold pairing:
+    +------------------------+------------+------------+---------+------+------+------+------+
+    |                        | ontology   |   taxon_id | taxon   |   tp |   fp |   fn |   tn |
+    +========================+============+============+=========+======+======+======+======+
+    | ('T72270000115', 0.01) | CCO        |       7227 | DROME   |   10 |  102 |    0 | 3793 |
+    +------------------------+------------+------------+---------+------+------+------+------+
+    | ('T72270000115', 0.02) | CCO        |       7227 | DROME   |   10 |   44 |    0 | 3851 |
+    +------------------------+------------+------------+---------+------+------+------+------+
+    | ('T72270000115', 0.03) | CCO        |       7227 | DROME   |   10 |    3 |    0 | 3892 |
+    +------------------------+------------+------------+---------+------+------+------+------+
+    | ('T72270000115', 0.05) | CCO        |       7227 | DROME   |   10 |    3 |    0 | 3892 |
+    +------------------------+------------+------------+---------+------+------+------+------+
+    | ('T72270000115', 0.06) | CCO        |       7227 | DROME   |   10 |    3 |    0 | 3892 |
+    +------------------------+------------+------------+---------+------+------+------+------+
 
     """
 
     predictions_path = Path(predictions_parent_directory)
     benchmark_path = Path(benchmark_parent_directory)
+    ia_directory_path = Path(ia_parent_directory)
 
     for ontology in ontologies:
+        ia_df = pd.read_pickle(ia_directory_path / f"{ontology}_ia.pkl")
         prediction_files = list(predictions_path.glob(f"*{model_id}_*{ontology}*json"))
         benchmark_files = list(benchmark_path.glob(f"*{ontology}*json"))
 
@@ -253,7 +289,8 @@ def main(
             else:
                 continue
 
-            yield evaluate_species(prediction_file, benchmark_file)
+
+            yield evaluate_species(prediction_file, benchmark_file, ia_df)
 
 
 if __name__ == "__main__":
@@ -264,11 +301,12 @@ if __name__ == "__main__":
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
         prediction_filepath_str = config.get("prediction_filepath")
         benchmark_filepath_str = config.get("benchmark_filepath")
+        dag_directory_filepath_str = config.get("dag_directory")
         model_id = config.get("model_id")
         ontologies = config.get("ontologies")
 
         for result in main(
-            prediction_filepath_str, benchmark_filepath_str, model_id, ontologies
+            prediction_filepath_str, benchmark_filepath_str, dag_directory_filepath_str, model_id, ontologies
         ):
-            print(result)
+            print(result.iloc[:10, :].to_markdown(tablefmt="grid"))
             print("\n\n")
