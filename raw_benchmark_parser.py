@@ -17,7 +17,6 @@ The json files have this form:
 """
 from pathlib import Path
 import json
-#from goatools.obo_parser import GODag
 import numpy as np
 import pandas as pd
 from config import taxonomy_map
@@ -27,15 +26,15 @@ def main(
     root_benchmark_path_str: str,
     dag_df_directory_filepath: str,
     output_directory_filepath_str: str,
-    knowledge_type:int = 1, # either 1 for partial or 2 for none
+    knowledge_type: int = 1,  # either 1 for partial or 2 for none
     taxonomy_map: dict = {},
     delimiter: str = "\t",
 ):
 
-    #obo_filepath = "./data/go_cafa3.obo"
-    #optional_attrs = ["relationship", "replaced_by", "consider"]
-    #optional_relationships = {'part_of', }
-    #dag = GODag(obo_filepath, optional_attrs=optional_attrs, load_obsolete=False, prt=None)
+    # obo_filepath = "./data/go_cafa3.obo"
+    # optional_attrs = ["relationship", "replaced_by", "consider"]
+    # optional_relationships = {'part_of', }
+    # dag = GODag(obo_filepath, optional_attrs=optional_attrs, load_obsolete=False, prt=None)
 
     root_benchmark_path = Path(root_benchmark_path_str)
 
@@ -45,7 +44,9 @@ def main(
 
     # The "list" files are one file per species/evidence type and contain one protein per line.
     # TODO: Handle types
-    species_list_files = list((root_benchmark_path / "lists").glob(f"*_type{knowledge_type}.txt"))
+    species_list_files = list(
+        (root_benchmark_path / "lists").glob(f"*_type{knowledge_type}.txt")
+    )
 
     taxonomy_map = {v: k for k, v in taxonomy_map.items()}
 
@@ -73,7 +74,7 @@ def main(
                 species_mask = namespace_df["protein"].isin(species_proteins)
                 namespace_df.loc[species_mask, "taxon"] = species_short_name
                 namespace_df.loc[species_mask, "taxon_id"] = taxonomy_map.get(
-                    species_short_name, ""
+                    species_short_name
                 )
 
         """
@@ -170,7 +171,7 @@ def main(
 
             benchmark_dict = {
                 "benchmark_taxon": taxon,
-                "benchmark_taxon_id": taxonomy_map.get("taxon"),
+                "benchmark_taxon_id": taxonomy_map.get(taxon),
                 "benchmark_ontology": namespace,
                 "benchmark_ontology_term_count": len(dag_df.index),
                 "protein_annotations": {},
@@ -186,7 +187,8 @@ def main(
             output_directory_path = Path(output_directory_filepath_str)
             output_directory_path.mkdir(exist_ok=True, parents=True)
             json_filepath = (
-                output_directory_path / f"{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_type_{knowledge_type}_benchmark.json"
+                output_directory_path
+                / f"{namespace.upper()}_{taxon}_{taxonomy_map.get(taxon, '')}_type_{knowledge_type}_benchmark.json"
             )
             print(f"\tWRITING {json_filepath}")
             with open(json_filepath, "w") as json_write_handle:
@@ -195,7 +197,9 @@ def main(
 
 if __name__ == "__main__":
     delimiter = "\t"
-    root_benchmark_path_str = "/home/scott/Documents/MATLAB/CAFA2/benchmark/groundtruth/CAFA3/"
+    root_benchmark_path_str = (
+        "/home/scott/Documents/MATLAB/CAFA2/benchmark/groundtruth/CAFA3/"
+    )
     root_benchmark_path_str = "./data/benchmark/raw"
     dag_df_directory_filepath = f"../code/CLEAN/v6/data/propagation/"  # propagation_map_df_{namespace.upper()}.pkl"
     dag_df_directory_filepath = "./data/propagation/"
