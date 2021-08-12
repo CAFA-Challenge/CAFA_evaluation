@@ -3,6 +3,7 @@ from typing import Iterable
 import json
 import numpy as np
 import pandas as pd
+import yaml
 
 
 def initialize_proteins_and_thresholds_dataframe(
@@ -295,7 +296,6 @@ def main(
 
 if __name__ == "__main__":
 
-    import yaml
 
     with open("./parser_config.yml", "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
@@ -308,5 +308,8 @@ if __name__ == "__main__":
         for result in main(
             prediction_filepath_str, benchmark_filepath_str, dag_directory_filepath_str, model_id, ontologies
         ):
-            print(result.iloc[:10, :].to_markdown(tablefmt="grid"))
+            print(result.iloc[:, :].to_markdown(tablefmt="grid"))
+            #print(result.index.get_level_values(0))
+            result.iloc[0, :].taxon
+
             print("\n\n")
