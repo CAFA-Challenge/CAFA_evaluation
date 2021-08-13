@@ -2,6 +2,7 @@
 #benchmark_filepath_str: data/benchmark/CCO_DROME_7227_benchmark.json
 prediction_filepath: data/predictions2
 benchmark_filepath: data/parsed_benchmark
+predictor_group_name: ZhangFreddolinoLab
 model_id: 1
 ontologies: [CCO, BPO]
 
