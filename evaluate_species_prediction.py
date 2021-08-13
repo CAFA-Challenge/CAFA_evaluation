@@ -304,12 +304,19 @@ if __name__ == "__main__":
         dag_directory_filepath_str = config.get("dag_directory")
         model_id = config.get("model_id")
         ontologies = config.get("ontologies")
+        predictor_group_name = config.get("predictor_group_name")
 
-        for result in main(
+        for taxon_result_df in main(
             prediction_filepath_str, benchmark_filepath_str, dag_directory_filepath_str, model_id, ontologies
         ):
-            print(result.iloc[:, :].to_markdown(tablefmt="grid"))
-            #print(result.index.get_level_values(0))
-            result.iloc[0, :].taxon
+            print(taxon_result_df.iloc[:, :].to_markdown(tablefmt="grid"))
+            taxon = taxon_result_df.iloc[0, :].taxon
+            ontology = taxon_result_df.iloc[0, :].ontology
+
+            output_directory = Path(f"./data/working/{predictor_group_name}")
+            output_directory.mkdir(parents=True, exist_ok=True)
+
+            taxon_result_df.to_pickle(output_directory / f"{taxon}_{ontology}_{model_id}.pkl")
+
 
             print("\n\n")
