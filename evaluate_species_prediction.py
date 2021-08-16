@@ -16,10 +16,27 @@ def initialize_proteins_and_thresholds_dataframe(
     :param thresholds:
     :return:
     """
+    columns = (
+        "protein",
+        "threshold",
+        "tp_ia",
+        "fp_ia",
+        "fn_ia",
+        "benchmark_ia",
+        "weighted_precision",
+        "weighted_recall",
+        "tp",
+        "fp",
+        "fn",
+        "tn",
+        "precision",
+        "recall",
+    )
 
-    matrix = np.zeros(((len(proteins) * len(thresholds)), 9))
+    matrix = np.zeros(((len(proteins) * len(thresholds)), len(columns)))
     protein_and_threshold_df = pd.DataFrame(
-        data=matrix, columns=("protein", "threshold", "tp_ia", "fp_ia", "fn_ia", "tp", "fp", "fn", "tn")
+        data=matrix,
+        columns=columns
     )
     df_datatypes = {
         "protein": "str",
@@ -27,10 +44,15 @@ def initialize_proteins_and_thresholds_dataframe(
         "tp_ia": "float",
         "fp_ia": "float",
         "fn_ia": "float",
+        "benchmark_ia": "float",
+        "weighted_precision": "float",
+        "weighted_recall": "float",
         "tp": "float",
         "fp": "float",
         "fn": "float",
         "tn": "float",
+        "precision": "float",
+        "recall": "float",
     }
     protein_and_threshold_df = protein_and_threshold_df.astype(df_datatypes)
 
@@ -93,11 +115,26 @@ def calculate_weighted_confusion_matrix(
     Here we retrieve the IC for the relevant nodes from the node_weights_df.
     """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
+    tp_info_accretion = sum([ia_df.loc[term, "ia"] for term in cm_terms.get("TP", [])])
+    fp_info_accretion = sum([ia_df.loc[term, "ia"] for term in cm_terms.get("FP", [])])
+    fn_info_accretion = sum([ia_df.loc[term, "ia"] for term in cm_terms.get("FN", [])])
+    benchmark_info_accretion = ia_df.loc[benchmark_terms, "ia"].sum()
 
-    tp_info_accretion = sum([ia_df.loc[term, 'ia'] for term in cm_terms.get('TP', [])])
-    fp_info_accretion = sum([ia_df.loc[term, 'ia'] for term in cm_terms.get('FP', [])])
-    fn_info_accretion = sum([ia_df.loc[term, 'ia'] for term in cm_terms.get('FN', [])])
-    return {"TP": tp_info_accretion, "FP": fp_info_accretion, "FN": fn_info_accretion}
+    try:
+        weighted_precision = tp_info_accretion / (tp_info_accretion + fp_info_accretion)
+    except ZeroDivisionError:
+        weighted_precision = 0
+
+    weighted_recall = tp_info_accretion / benchmark_info_accretion
+
+    return {
+        "TP": tp_info_accretion,
+        "FP": fp_info_accretion,
+        "FN": fn_info_accretion,
+        "benchmark_ia": benchmark_info_accretion,
+        "weighted_precision": weighted_precision,
+        "weighted_recall": weighted_recall
+    }
 
 
 def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> dict:
@@ -108,8 +145,18 @@ def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> di
     true_positive = len(cm_terms["TP"])
     false_positive = len(cm_terms["FP"])
     false_negative = len(cm_terms["FN"])
+    try:
+        precision = true_positive / (true_positive + false_positive)
+    except ZeroDivisionError:
+        precision = 0
 
-    return {"TP": true_positive, "FP": false_positive, "FN": false_negative}
+    return {
+        "TP": true_positive,
+        "FP": false_positive,
+        "FN": false_negative,
+        "precision": precision,
+        "recall": true_positive / len(benchmark_terms),
+    }
 
 
 def get_confusion_matrix_dataframe(
@@ -185,21 +232,39 @@ def get_confusion_matrix_dataframe(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
             )
+            # print(confusion_matrix)
             protein_and_threshold_df.loc[protein, threshold].tp = confusion_matrix["TP"]
             protein_and_threshold_df.loc[protein, threshold].fp = confusion_matrix["FP"]
             protein_and_threshold_df.loc[protein, threshold].fn = confusion_matrix["FN"]
-            true_negative = benchmark_ontology_term_count - sum(confusion_matrix.values())
+            true_negative = benchmark_ontology_term_count - sum(
+                confusion_matrix.values()
+            )
             protein_and_threshold_df.loc[protein, threshold].tn = true_negative
+
+            protein_and_threshold_df.loc[
+                protein, threshold
+            ].precision = confusion_matrix["precision"]
+            protein_and_threshold_df.loc[protein, threshold].recall = confusion_matrix[
+                "recall"
+            ]
 
             ia_sums = calculate_weighted_confusion_matrix(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
-                ia_df=ia_df
+                ia_df=ia_df,
             )
             protein_and_threshold_df.loc[protein, threshold].tp_ia = ia_sums["TP"]
             protein_and_threshold_df.loc[protein, threshold].fp_ia = ia_sums["FP"]
             protein_and_threshold_df.loc[protein, threshold].fn_ia = ia_sums["FN"]
-
+            protein_and_threshold_df.loc[protein, threshold].benchmark_ia = ia_sums[
+                "benchmark_ia"
+            ]
+            protein_and_threshold_df.loc[
+                protein, threshold
+            ].weighted_precision = ia_sums["weighted_precision"]
+            protein_and_threshold_df.loc[
+                protein, threshold
+            ].weighted_recall = ia_sums["weighted_recall"]
 
     # Lastly, add some metadata to each row:
     protein_and_threshold_df.insert(0, "taxon", benchmark_taxon)
@@ -246,9 +311,9 @@ def main(
     model_id: int,
     ontologies: Iterable = ("CCO", "BPO"),
 ):
-    """ A generator function which yields pandas DataFrames. Each DataFrame contains evaluation metrics
+    """A generator function which yields pandas DataFrames. Each DataFrame contains evaluation metrics
     for a specific species + ontology pairing.
-    
+
     The yielded DataFrames have the following form with one row per protein + threshold pairing:
     +------------------------+------------+------------+---------+------+------+------+------+
     |                        | ontology   |   taxon_id | taxon   |   tp |   fp |   fn |   tn |
@@ -290,12 +355,10 @@ def main(
             else:
                 continue
 
-
             yield evaluate_species(prediction_file, benchmark_file, ia_df)
 
 
 if __name__ == "__main__":
-
 
     with open("./parser_config.yml", "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
@@ -307,16 +370,21 @@ if __name__ == "__main__":
         predictor_group_name = config.get("predictor_group_name")
 
         for taxon_result_df in main(
-            prediction_filepath_str, benchmark_filepath_str, dag_directory_filepath_str, model_id, ontologies
+            prediction_filepath_str,
+            benchmark_filepath_str,
+            dag_directory_filepath_str,
+            model_id,
+            ontologies,
         ):
-            print(taxon_result_df.iloc[:, :].to_markdown(tablefmt="grid"))
+            print(taxon_result_df.iloc[:10, :].to_markdown(tablefmt="grid"))
             taxon = taxon_result_df.iloc[0, :].taxon
             ontology = taxon_result_df.iloc[0, :].ontology
 
             output_directory = Path(f"./data/working/{predictor_group_name}")
             output_directory.mkdir(parents=True, exist_ok=True)
 
-            taxon_result_df.to_pickle(output_directory / f"{taxon}_{ontology}_{model_id}.pkl")
-
+            taxon_result_df.to_pickle(
+                output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
+            )
 
             print("\n\n")
