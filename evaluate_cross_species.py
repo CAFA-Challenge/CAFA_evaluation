@@ -1,4 +1,5 @@
 from pathlib import Path
+import numpy as np
 import pandas as pd
 
 
@@ -21,6 +22,17 @@ if __name__ == "__main__":
 
 
     all_thresholds = sorted(list(all_thresholds))
+    columns = ('threshold', 'ontology', 'taxons', 'average_precision', 'average_recall', 'average_weighted_precision', 'average_weighted_recall')
+
+    # Construct a dataframe to hold the computed results:
+    matrix = np.zeros((len(all_thresholds), len(columns)))
+    results_df = pd.DataFrame(
+        data=matrix,
+        columns=columns
+    )
+    results_df = results_df.astype({'ontology': 'str'})
+    results_df['threshold'] = all_thresholds
+    results_df.set_index('threshold', drop=True, inplace=True)
 
 
     for threshold in all_thresholds:
@@ -30,32 +42,41 @@ if __name__ == "__main__":
 
             df = pd.read_pickle(file)
 
+            threshold_mask = df.index.get_level_values(1) >= threshold
+            df = df[threshold_mask]
+            ''' 
             try:
                 df = df.loc[pd.IndexSlice[:, threshold], :]
             except KeyError:
                 # the threshold at hand does not exist in the species at hand
                 continue
-
+            '''
             if all_species_at_threshold_df is None:
                 all_species_at_threshold_df = df
             else:
                 all_species_at_threshold_df = all_species_at_threshold_df.append(df)
 
 
-        print(threshold)
-        print(all_species_at_threshold_df.loc[:, ('ontology', 'taxon_id', 'taxon', 'weighted_precision', 'weighted_recall', 'precision', 'recall', 'tp', 'tn', 'fn', 'fp')].to_markdown(tablefmt='grid'))
         protein_count = all_species_at_threshold_df.shape[0]
 
         average_precision = all_species_at_threshold_df.loc[:, 'precision'].sum() / protein_count
         average_recall = all_species_at_threshold_df.loc[:, 'recall'].sum() / protein_count
-
-        print(f"AVERAGE PRECISION: {average_precision}, AVERAGE RECALL: {average_recall}")
         average_weighted_precision = all_species_at_threshold_df.loc[:, 'weighted_precision'].sum() / protein_count
         average_weighted_recall = all_species_at_threshold_df.loc[:, 'weighted_recall'].sum() / protein_count
-        print(f"AVERAGE WEIGHTED PRECISION: {average_weighted_precision}, AVERAGE WEIGHTED RECALL: {average_weighted_recall}")
+
+        results_df.loc[threshold, 'ontology'] = all_species_at_threshold_df.iloc[0].ontology
+        results_df.loc[threshold, 'average_precision'] = average_precision
+        results_df.loc[threshold, 'average_recall'] = average_recall
+        results_df.loc[threshold, 'average_weighted_precision'] = average_weighted_precision
+        results_df.loc[threshold, 'average_weighted_recall'] = average_weighted_recall
+
+        taxons = ",".join(set(all_species_at_threshold_df.loc[:, 'taxon']))
+        results_df.loc[threshold, 'taxons'] = taxons
 
 
-        print("")
+    print(results_df.to_markdown(tablefmt='grid'))
+
+
 
 
 
