@@ -56,7 +56,8 @@ Copyrighted by the UniProt Consortium, see '''
         common_name = None
         synonoym = None
 
-        for line in lines[:20]:
+        #for line in lines[:20]:
+        for i, line in enumerate(lines):
 
             if line[1] != '=':
                 mnemonic, kingdom, ncbi_id = line.split(":")[0].split()
@@ -68,18 +69,21 @@ Copyrighted by the UniProt Consortium, see '''
                 if last_organism is not None:
                     last_organism = mnemonic
 
-                print(mnemonic, kingdoms.get(kingdom, kingdom), ncbi_id, common_name, synonoym)
+                sublines = [l for l in lines[i:i+3] if l.startswith("S=") or l.startswith("C=")]
 
-            elif current_organism is not None:
-                _split = line.split()
+                for l in sublines:
+                    if l.startswith("S="):
+                        synonoym = line.split("=")[-1]
+                    elif l.startswith("C="):
+                        common_name = line.split("=")[-1]
 
-                if _split[0] == 'C':
-                    common_name = _split[-1]
-                elif _split[0] == 'S':
-                    synonoym = _split[-1]
+                #print(mnemonic, kingdoms.get(kingdom, kingdom), ncbi_id, common_name, synonoym)
+                parsed_data[mnemonic] = (ncbi_id, kingdoms.get(kingdom, kingdom), common_name, synonoym)
 
 
 
+    df = pd.DataFrame.from_dict(data=parsed_data, orient='index', columns=('ncbi', 'kingdom', 'common', 'synonym'))
+    df.index.rename('mnemonic', inplace=True)
+    print(df.loc['SALTY', :].to_markdown(tablefmt='grid'))
 
-        #for line in lines:
 
