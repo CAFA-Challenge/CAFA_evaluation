@@ -20,3 +20,5 @@ This step uses `raw_prediction_parser.py`
 5. Evaluate the prediction data on a per-species, per-ontology basis against the benchmark data using `evaluate_species_prediction.py`
 
 6. Evaluate the prediction data per-ontology across all species using `evaluate_all_species_prediction.py`
+
+7. Generate cross-species evaluation metrics using `evaluate_cross_species.py`
