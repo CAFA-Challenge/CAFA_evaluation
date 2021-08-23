@@ -8,7 +8,7 @@ ontologies: [CCO, BPO]
 
 
 benchmark_directory: ./data/parsed_benchmark
-dag_directory: ./data/dag_ia
+dag_directory: ./example/dag_ia
 predictions_directory: /media/airport/cafa3_submissions/ZhangFreddolinoLab
 prediction_file_delimiter: \t
 knowledge_type: 1
