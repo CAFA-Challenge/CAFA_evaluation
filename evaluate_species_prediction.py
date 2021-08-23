@@ -4,6 +4,7 @@ import json
 import numpy as np
 import pandas as pd
 import yaml
+from cafa_metrics import get_rumi
 
 
 def initialize_proteins_and_thresholds_dataframe(
@@ -113,6 +114,8 @@ def calculate_weighted_confusion_matrix(
     """Calculates the weighted precision and recall for two sets of terms
     Weighted precision and recall rely on the information content (IC) of relevant terms (nodes).
     Here we retrieve the IC for the relevant nodes from the node_weights_df.
+
+    In practice, this will be called for the predicted_terms @ a specific threshold.
     """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
     tp_info_accretion = sum([ia_df.loc[term, "ia"] for term in cm_terms.get("TP", [])])
@@ -127,6 +130,9 @@ def calculate_weighted_confusion_matrix(
 
     weighted_recall = tp_info_accretion / benchmark_info_accretion
 
+    print(get_rumi(predicted_terms, benchmark_terms, ia_df))
+    #predicted_terms: set, benchmark_terms: set, weighted_graph
+
     return {
         "TP": tp_info_accretion,
         "FP": fp_info_accretion,
@@ -140,6 +146,8 @@ def calculate_weighted_confusion_matrix(
 def calculate_confusion_matrix(predicted_terms: set, benchmark_terms: set) -> dict:
     """Calculates true positive, false positive and false negative for two sets of terms.
     Does not calculate true negative.
+
+    In practice, this will be called for the predicted_terms @ a specific threshold.
     """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
     true_positive = len(cm_terms["TP"])
@@ -217,7 +225,8 @@ def get_confusion_matrix_dataframe(
     )
 
     # protein_and_threshold_df has keys (proteins and thresholds), but no values.
-    # Next, populate the DataFrame with the confusion matrix values
+    # Next, populate the DataFrame with the confusion matrix values @ each
+    # decision threshold:
     for threshold in distinct_prediction_thresholds:
         for protein in benchmark_proteins:
 
@@ -248,6 +257,7 @@ def get_confusion_matrix_dataframe(
                 "recall"
             ]
 
+            print(threshold, protein)
             ia_sums = calculate_weighted_confusion_matrix(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
@@ -380,11 +390,11 @@ if __name__ == "__main__":
             taxon = taxon_result_df.iloc[0, :].taxon
             ontology = taxon_result_df.iloc[0, :].ontology
 
-            output_directory = Path(f"./data/working/{predictor_group_name}")
-            output_directory.mkdir(parents=True, exist_ok=True)
+            #output_directory = Path(f"./data/working/{predictor_group_name}")
+            #output_directory.mkdir(parents=True, exist_ok=True)
 
-            taxon_result_df.to_pickle(
-                output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
-            )
+            #taxon_result_df.to_pickle(
+            #    output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
+            #)
 
             print("\n\n")
