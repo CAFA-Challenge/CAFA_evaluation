@@ -111,7 +111,5 @@ if __name__ == "__main__":
     input_filename_pattern = f"*_{ontology}_*.pkl"
     species_specific_files = list(root_path.glob(input_filename_pattern))
     metrics_df = main(input_files=species_specific_files)
-    print(metrics_df.to_markdown(tablefmt="grid"))
-    with open("example/cross_species_metrics_example.md", "w") as write_handle:
-        write_handle.write(metrics_df.to_markdown(tablefmt="grid"))
+    print(metrics_df.to_markdown(tablefmt='grid'))
 
