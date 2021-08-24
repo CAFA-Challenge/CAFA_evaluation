@@ -216,11 +216,11 @@ if __name__ == "__main__":
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
         benchmark_directory = config.get("benchmark_directory")
         dag_directory = config.get("dag_directory")
-        predictions_directory = config.get("predictions_directory")
+        predictions_directory = config.get("raw_predictions_directory")
         prediction_file_delimiter = config.get("prediction_file_delimiter", " ")
         knowledge_type = config.get("knowledge_type")
         propagation_df_directory = config.get("propagation_df_directory")
-        output_directory = config.get("output_directory")
+        output_directory = config.get("predictions_json_directory")
 
         main(
             predictions_directory,

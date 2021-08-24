@@ -130,7 +130,7 @@ def calculate_weighted_confusion_matrix(
 
     weighted_recall = tp_info_accretion / benchmark_info_accretion
 
-    print(get_rumi(predicted_terms, benchmark_terms, ia_df))
+    #print(get_rumi(predicted_terms, benchmark_terms, ia_df))
     #predicted_terms: set, benchmark_terms: set, weighted_graph
 
     return {
@@ -257,7 +257,7 @@ def get_confusion_matrix_dataframe(
                 "recall"
             ]
 
-            print(threshold, protein)
+            #print(threshold, protein)
             ia_sums = calculate_weighted_confusion_matrix(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
@@ -393,7 +393,9 @@ if __name__ == "__main__":
 
     with open("./parser_config.yml", "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
-        prediction_filepath_str = config.get("prediction_filepath")
+        #prediction_filepath_str = config.get("prediction_filepath")
+        prediction_filepath_str = config.get("predictions_json_directory")
+
         benchmark_filepath_str = config.get("benchmark_filepath")
         dag_directory_filepath_str = config.get("dag_directory")
         model_id = config.get("model_id")
@@ -411,11 +413,11 @@ if __name__ == "__main__":
             taxon = taxon_result_df.iloc[0, :].taxon
             ontology = taxon_result_df.iloc[0, :].ontology
 
-            #output_directory = Path(f"./data/working/{predictor_group_name}")
-            #output_directory.mkdir(parents=True, exist_ok=True)
+            output_directory = Path(f"./data2/working/{predictor_group_name}")
+            output_directory.mkdir(parents=True, exist_ok=True)
 
-            #taxon_result_df.to_pickle(
-            #    output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
-            #)
+            taxon_result_df.to_pickle(
+                output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
+            )
 
             print("\n\n")

@@ -9,8 +9,9 @@ ontologies: [CCO, BPO]
 
 benchmark_directory: ./data/parsed_benchmark
 dag_directory: ./example/dag_ia
-predictions_directory: /media/airport/cafa3_submissions/ZhangFreddolinoLab
+raw_predictions_directory: /media/airport/cafa3_submissions/ZhangFreddolinoLab
+predictions_json_directory: ./data2
 prediction_file_delimiter: \t
 knowledge_type: 1
 propagation_df_directory: ./data/propagation
-output_directory: ./data/predictions2
+#output_directory: ./data2
