@@ -113,12 +113,18 @@ def main(
 
         print(f"PARSING {ontology}\n*********************\n")
 
-        prediction_files = predictions_parent_path.glob("*.txt")
+        prediction_files = list(predictions_parent_path.glob("*.txt"))
+        prediction_files.sort(key=lambda f: f.stem)
 
         for prediction_file in prediction_files:
+            print(f"\nPARSING {prediction_file}")
             lab, model, taxon_id, *rest = prediction_file.stem.split("_")
 
+            # taxonomy_map is a dict mapping ncbi IDs (9606 for example) to uniprot shorthand (HUMAN for example).
+            # benchmark files use the uniprot strings, predictions use the numerical IDs, so the mapping is necessary
+            # for matching a prediction to a benchmark.
             if int(taxon_id) not in taxonomy_map.keys():
+                print(f"\tSKIPPING. {taxon_id} NOT FOUND IN KNOWN TAXON IDS")
                 continue
 
             # find the relevant benchmark DataFrame:
@@ -131,7 +137,7 @@ def main(
             except IndexError:
                 # No benchmark found
                 # TODO: Fix this exception, it's likely due to bad benchmark parsing
-                print(f"NO BENCHMARK FOUND FOR {ontology} AND {taxon_id}")
+                print(f"\tNO BENCHMARK FOUND FOR {ontology} AND {taxon_id}")
                 continue
 
             #taxon_ontology_benchmark_df = pd.read_pickle(benchmark_file)
@@ -182,7 +188,7 @@ def main(
             | T100900000453 |            0 |            0 |            0 |            0 |            0 |            0 |
             +---------------+--------------+--------------+--------------+--------------+--------------+--------------+
             """
-            # Convert the DataFrame to a more succint dictionary:
+            # Convert the DataFrame to a more succinct dictionary:
             prediction_dict = prediction_dataframe_to_dict(raw_prediction_df)
 
             # output_filepath = f"./data/ZhangFreddolinoLab/{prediction_file.stem}_{ontology}.json"
