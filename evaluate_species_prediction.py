@@ -390,11 +390,11 @@ if __name__ == "__main__":
             taxon = taxon_result_df.iloc[0, :].taxon
             ontology = taxon_result_df.iloc[0, :].ontology
 
-            #output_directory = Path(f"./data/working/{predictor_group_name}")
-            #output_directory.mkdir(parents=True, exist_ok=True)
+            output_directory = Path(f"./data/working/{predictor_group_name}")
+            output_directory.mkdir(parents=True, exist_ok=True)
 
-            #taxon_result_df.to_pickle(
-            #    output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
-            #)
+            taxon_result_df.to_pickle(
+                output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
+            )
 
             print("\n\n")
