@@ -324,6 +324,27 @@ def main(
     """A generator function which yields pandas DataFrames. Each DataFrame contains evaluation metrics
     for a specific species + ontology pairing.
 
+    predictions_parent_directory is a str representation of the directory which contains the 
+    json-representation of the prediction data. These json files should have names derived from the raw prediction files. 
+    Here's an example filename: DoeLab_1_9606_go_CCO.json
+    That filename contains the original lab name (DoeLab), model number (1), a species ID (9606) and ontology shorthand (CCO). 
+
+    For the prediction files, the file contents are nested dictionaries mapping proteins to terms with threshold values:
+
+    {
+        "T96060000375": {
+            "GO:0000139": 0.02, 
+            "GO:0000151": 0.01, 
+            "GO:0005575": 0.06, 
+            "GO:0005576": 0.02, 
+            ...
+        },
+        "T96060000845": {
+            "GO:0000151": .02,
+            ...
+        }
+    }
+
     The yielded DataFrames have the following form with one row per protein + threshold pairing:
     +------------------------+------------+------------+---------+------+------+------+------+
     |                        | ontology   |   taxon_id | taxon   |   tp |   fp |   fn |   tn |
