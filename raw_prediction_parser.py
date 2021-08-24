@@ -101,7 +101,7 @@ def main(
     dag_df_directory_path = Path(dag_df_parent_directory)
     output_directory_path = Path(output_parent_directory)
     propagation_directory_path = Path(propagation_df_parent_directory)
-
+    written_files = []
     for ontology in ontologies:
 
         dag_df_filepath = (
@@ -124,7 +124,7 @@ def main(
             # benchmark files use the uniprot strings, predictions use the numerical IDs, so the mapping is necessary
             # for matching a prediction to a benchmark.
             if int(taxon_id) not in taxonomy_map.keys():
-                print(f"\tSKIPPING. {taxon_id} NOT FOUND IN KNOWN TAXON IDS")
+                print(f"\tSKIPPING. `{taxon_id}` NOT FOUND IN KNOWN TAXON IDS")
                 continue
 
             # find the relevant benchmark DataFrame:
@@ -199,9 +199,11 @@ def main(
                 output_directory_path / f"{prediction_file.stem}_{ontology}.json"
             )
             print(f"\tWRITING {output_filepath}")
+            written_files.append(output_filepath)
             with open(output_filepath, "w") as write_handle:
                 json.dump(prediction_dict, write_handle)
 
+    return written_files
 
 if __name__ == "__main__":
     '''
@@ -220,17 +222,18 @@ if __name__ == "__main__":
 
     with open(config_filepath, "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
-        benchmark_directory = config.get("benchmark_directory")
+        benchmark_json_directory = config.get("benchmark_json_directory")
         dag_directory = config.get("dag_directory")
-        predictions_directory = config.get("raw_predictions_directory")
         prediction_file_delimiter = config.get("prediction_file_delimiter", " ")
         knowledge_type = config.get("knowledge_type")
         propagation_df_directory = config.get("propagation_df_directory")
+
+        predictions_directory = config.get("raw_predictions_directory")
         output_directory = config.get("predictions_json_directory")
 
-        main(
+        parser_output = main(
             predictions_directory,
-            benchmark_directory,
+            benchmark_json_directory,
             dag_directory,
             propagation_df_directory,
             output_directory,
@@ -238,3 +241,7 @@ if __name__ == "__main__":
             ontologies,
             prediction_file_delimiter,
         )
+
+        print(f"\nCREATED FILES:")
+        for f in parser_output:
+            print(f"\t{f}")
