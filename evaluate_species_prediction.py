@@ -379,28 +379,41 @@ def main(
                 # No taxon_id found in file name
                 continue
 
-            prediction_file = [f for f in prediction_files if str(taxon_id) in str(f)]
+            prediction_file = [f for f in prediction_files if str(taxon_id) in str(f) and f"_{model_id}_" in str(f)]
             # should only find one file:
             if len(prediction_file) == 1:
                 prediction_file = prediction_file[0]
             else:
+                print(f"\t NO PREDICTION FILE FOUND FOR {benchmark_file} {taxon_str}/{taxon_id} WITH ONTOLOGY {ontology}")
                 continue
 
             yield evaluate_species(prediction_file, benchmark_file, ia_df)
 
 
 if __name__ == "__main__":
+    import sys
+    config_filepath = sys.argv[1]
+    print(f"USING CONFIG {config_filepath}")
 
-    with open("./parser_config.yml", "r") as config_handle:
+    with open(config_filepath, "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
         #prediction_filepath_str = config.get("prediction_filepath")
         prediction_filepath_str = config.get("predictions_json_directory")
 
-        benchmark_filepath_str = config.get("benchmark_filepath")
-        dag_directory_filepath_str = config.get("dag_directory")
+        #benchmark_filepath_str = config.get("benchmark_filepath")
+        benchmark_filepath_str = config.get("benchmark_json_directory")
+        dag_directory_filepath_str = config.get("dag_ic_directory")
         model_id = config.get("model_id")
         ontologies = config.get("ontologies")
         predictor_group_name = config.get("predictor_group_name")
+
+        dataframe_write_directory = config.get("predictions_dataframes_directory")
+
+        print(prediction_filepath_str)
+        print(benchmark_filepath_str)
+        print(dag_directory_filepath_str)
+        print(model_id)
+        print(ontologies)
 
         for taxon_result_df in main(
             prediction_filepath_str,
@@ -410,14 +423,20 @@ if __name__ == "__main__":
             ontologies,
         ):
             print(taxon_result_df.iloc[:10, :].to_markdown(tablefmt="grid"))
+            row_count, col_count = taxon_result_df.shape
+
+            if row_count == 0:
+                print(f"\tEMPTY DATAFRAME FOR {prediction_filepath_str}, SKIPPING")
+                continue
+
             taxon = taxon_result_df.iloc[0, :].taxon
             ontology = taxon_result_df.iloc[0, :].ontology
 
-            output_directory = Path(f"./data2/working/{predictor_group_name}")
+            output_directory = Path(dataframe_write_directory)
             output_directory.mkdir(parents=True, exist_ok=True)
 
-            taxon_result_df.to_pickle(
-                output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
-            )
+            write_path = output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
+            print(f"WRITING {write_path}")
+            taxon_result_df.to_pickle(write_path)
 
             print("\n\n")
