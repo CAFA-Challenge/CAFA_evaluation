@@ -106,10 +106,26 @@ def main(input_files: Iterable) -> pd.DataFrame:
 
 if __name__ == "__main__":
 
-    root_path = Path("./data/working/ZhangFreddolinoLab/")
-    ontology = "cco"
-    input_filename_pattern = f"*_{ontology}_*.pkl"
-    species_specific_files = list(root_path.glob(input_filename_pattern))
-    metrics_df = main(input_files=species_specific_files)
-    print(metrics_df.to_markdown(tablefmt='grid'))
+    ''' This is dependent on the species/ontology specific DataFrames created by evaluate_species_prediction.py '''
+
+    import sys
+    import yaml
+    config_filepath = sys.argv[1]
+
+    with open(config_filepath, "r") as config_handle:
+        config = yaml.load(config_handle, Loader=yaml.BaseLoader)
+        dataframe_read_directory = Path(config.get("predictions_dataframes_directory"))
+        ontologies = config.get("ontologies")
+
+    for ontology in ontologies:
+        input_filename_pattern = f"*_{ontology.lower()}_*.pkl"
+        species_specific_files = list(dataframe_read_directory.glob(input_filename_pattern))
+        print(f"\n{ontology}")
+        print("READING")
+        for ssf in species_specific_files:
+            print(f"\t{ssf}")
+
+        metrics_df = main(input_files=species_specific_files)
+        print(metrics_df.to_markdown(tablefmt='grid'))
+        print("\n")
 
