@@ -1,6 +1,6 @@
 """ Code for computing IA content values for graph nodes on a per-ontology basis.
 
-This generates pandas DataFrames with this general form:
+This file generates pandas DataFrames with this general form:
 +------------+----------+-------------+-------------+
 |            |   weight |   precision |          ia |
 +============+==========+=============+=============+
@@ -39,8 +39,10 @@ from graph_utils import (
 
 
 def get_ia_graph(
-    obo_filepath, namespace_long, groundtruth_filepath, propagation_map_filepath
+    obo_filepath: str, namespace_long: str, groundtruth_filepath: str, propagation_map_filepath: str
 ) -> nx.MultiDiGraph:
+    """ Generates a DAG in the form of a networkx graph containing Information Content values for
+    each graph node. """
 
     optional_attrs = ["relationship", "replaced_by", "consider"]
     namespaces = (namespace_long,)
@@ -73,11 +75,33 @@ def get_ia_graph(
     return graph
 
 
-def main(
-    namespaces: Iterable, obo_filepath: str, output_path_str: str, verbose=True
+def make_information_content_matrices(
+    namespaces: Iterable,
+    obo_filepath: str,
+    output_path_str: str,
+    verbose: str = True,
+    output_filename_pattern=None,
 ) -> None:
+    """Computes and writes pandas DataFrames representing the Information Content
+    of a DAG on a per-ontology basis.
+
+    The produced DataFrames have this general form:
+    +------------+----------+-------------+-------------+
+    |            |   weight |   precision |          ia |
+    +============+==========+=============+=============+
+    | GO:0005794 |       -5 |    0.365385 |  1.0068     |
+    +------------+----------+-------------+-------------+
+    | GO:0044431 |       -4 |    0.888889 |  0.117783   |
+    +------------+----------+-------------+-------------+
+    | ...        |      ... |         ... |       ...   |
+    +------------+----------+-------------+-------------+
+    """
+
+    if output_filename_pattern is None:
+        output_filename_pattern = "{namespace_short}_ia.pkl"
 
     output_path = Path(output_path_str)
+    output_path.mkdir(parents=True, exist_ok=True)
 
     for namespace_dict in namespaces:
         (
@@ -95,10 +119,11 @@ def main(
         weight_graph = get_ia_graph(
             obo_filepath, namespace_long, benchmark_filepath, propagation_map_filepath
         )
-        # nx.write_gpickle(weight_graph, f"./data/weighted_graph_{namespace_short}.pkl")
         graph_dict = {term: node for term, node in weight_graph.nodes.items()}
         dag_ia_df = pd.DataFrame.from_dict(data=graph_dict, orient="index")
-        dag_id_df_filepath = output_path / f"{namespace_short}_ia.pkl"
+        dag_id_df_filepath = output_path / output_filename_pattern.format(
+            namespace_short=namespace_short
+        )
         dag_ia_df.to_pickle(dag_id_df_filepath)
 
         if verbose:
@@ -108,28 +133,16 @@ def main(
 
 
 if __name__ == "__main__":
-    obo_filepath = "./data/go_cafa3.obo"
+    import sys
+    import yaml
 
-    ontology_namespaces = (
-        {
-            "short_name": "CCO",
-            "long_name": "cellular_component",
-            "raw_benchmark_filepath": "./data/benchmark/raw/leafonly_CCO.txt",
-            "propagation_df_filepath": "./data/propagation/propagation_map_df_CCO.pkl",
-        },
-        {
-            "short_name": "MFO",
-            "long_name": "molecular_function",
-            "raw_benchmark_filepath": "./data/benchmark/raw/leafonly_MFO.txt",
-            "propagation_df_filepath": "./data/propagation/propagation_map_df_MFO.pkl",
-        },
-        {
-            "short_name": "BPO",
-            "long_name": "biological_process",
-            "raw_benchmark_filepath": "./data/benchmark/raw/leafonly_BPO.txt",
-            "propagation_df_filepath": "./data/propagation/propagation_map_df_BPO.pkl",
-        },
-    )
+    config_filepath = sys.argv[1]
+    with open(config_filepath, "r") as config_handle:
+        config = yaml.load(config_handle, Loader=yaml.BaseLoader)
+        obo_filepath = config.get("obo_filepath")
+        ontologies = config.get("ontologies")
+        dag_directory = config.get("dag_directory")
 
-    output_path = "./data/dag_ia/"
-    main(ontology_namespaces, obo_filepath, output_path_str=output_path)
+        make_information_content_matrices(
+            ontologies, obo_filepath, output_path_str=dag_directory
+        )
