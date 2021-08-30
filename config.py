@@ -6,6 +6,15 @@ taxonomy_map = {
     7227: 'DROME',  # Drosophila melanogaster
     10090: 'MOUSE',  # Mus musculus
     10116: 'RAT',  # Rattus norvegicus
+    8355: 'XENLA',
+    559292: 'YEAST',
+    99287: 'SALTY',
+    160488: 'PSEPK',
+    243273: 'MYCGE',
+    243232: 'METJA',
+    85962: 'HELPY',
+    284812: 'SCHPO',
+    44689: 'DICDI',
 }
 
 ontologies = ('CCO',) #'MFO', 'BPO')
