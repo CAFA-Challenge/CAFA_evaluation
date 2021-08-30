@@ -7,7 +7,7 @@ import sys
 import json
 import numpy as np
 import pandas as pd
-from config import taxonomy_map, ontologies
+from config import taxonomy_map
 
 
 def get_propagated_prediction_dataframe(
@@ -90,6 +90,7 @@ def main(
     knowledge_type_id: int,
     ontologies: Iterable,
     prediction_file_delimiter: str,
+    prediction_file_header_line_count: int = 3
 ):
     ''' Reads raw prediction data, filters the data based on benchmark data, propagates the annotations and writes
     the resulting filtered, propagated annotation predictions with probability thresholds to json-formatted files.
@@ -102,6 +103,9 @@ def main(
     output_directory_path = Path(output_parent_directory)
     propagation_directory_path = Path(propagation_df_parent_directory)
     written_files = []
+
+    print(ontologies)
+
     for ontology in ontologies:
 
         dag_df_filepath = (
@@ -144,13 +148,15 @@ def main(
             with open(benchmark_file, "r") as read_benchmark_handle:
                 benchmark = json.load(read_benchmark_handle)
 
+            # Not all CAFA 3 files seem to have the same header metadata, it's either 3 or 4 lines:
+            print(f"\tSKIPPING {prediction_file_header_line_count} HEADER LINES")
 
             raw_prediction_df = pd.read_csv(
                 prediction_file,
                 engine="python",
                 delimiter=prediction_file_delimiter,
                 names=("protein", "term", "threshold"),
-                skiprows=3,
+                skiprows=prediction_file_header_line_count,
                 skipfooter=1,
                 dtype={"protein": "string", "term": "string", "threshold": "float32"},
             )
@@ -203,6 +209,7 @@ def main(
             with open(output_filepath, "w") as write_handle:
                 json.dump(prediction_dict, write_handle)
 
+        print(f"FINISHED PARSING {ontology}\n*********************\n")
     return written_files
 
 if __name__ == "__main__":
@@ -217,29 +224,34 @@ if __name__ == "__main__":
     '''
 
     import yaml
+    import sys
 
-    config_filepath = "./parser_config.yml"
+    config_filepath = sys.argv[1]
+    print(f"USING CONFIG {config_filepath}")
 
     with open(config_filepath, "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
+        ontologies = config.get("ontologies")
         benchmark_json_directory = config.get("benchmark_json_directory")
-        dag_directory = config.get("dag_directory")
+        dag_ic_directory = config.get("dag_ic_directory")
         prediction_file_delimiter = config.get("prediction_file_delimiter", " ")
         knowledge_type = config.get("knowledge_type")
         propagation_df_directory = config.get("propagation_df_directory")
+        skip_lines = int(config.get("prediction_file_header_line_count", 3))
 
-        predictions_directory = config.get("raw_predictions_directory")
+        raw_predictions_directory = config.get("raw_predictions_directory")
         output_directory = config.get("predictions_json_directory")
 
         parser_output = main(
-            predictions_directory,
+            raw_predictions_directory,
             benchmark_json_directory,
-            dag_directory,
+            dag_ic_directory,
             propagation_df_directory,
             output_directory,
             knowledge_type,
             ontologies,
             prediction_file_delimiter,
+            skip_lines
         )
 
         print(f"\nCREATED FILES:")
