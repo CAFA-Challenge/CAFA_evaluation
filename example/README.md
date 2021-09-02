@@ -36,7 +36,7 @@ annotations. That data is in the `example/dag_ia` directory of this git reposito
 
 1. Parse "raw" CAFA prediction files into intermediate json-formatted files. 
 
-    This step produces one file per species and ontology pair. Additionally, the predicted annotations are propagated.
+    This step produces one file per species/ontology pair. Additionally, the predicted "leaf" annotations are propagated.
 
     The output json files contain nested dictionaries mapping proteins to terms and thresholds with this form:
     ```json
@@ -49,7 +49,6 @@ annotations. That data is in the `example/dag_ia` directory of this git reposito
             "GO:0005623": 0.02, 
             "GO:0005634": 0.01, 
             "GO:0005654": 0.01,
-            ...
         }, 
         "T37020000185": {
             "GO:0005575": 0.97,
@@ -57,13 +56,11 @@ annotations. That data is in the `example/dag_ia` directory of this git reposito
             "GO:0005618": 0.01, 
             "GO:0005622": 0.97, 
             "GO:0005623": 0.97,
-            ...
         },
         "T37020000188": {
             "GO:0000325": 0.02, 
             "GO:0005575": 0.22, 
             "GO:0005576": 0.01,
-            ...
         }
     }
     ```
