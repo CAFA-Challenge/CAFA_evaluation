@@ -43,7 +43,7 @@ def main(input_files: Iterable) -> pd.DataFrame:
     columns = (
         "threshold",
         "ontology",
-        "taxons",
+        #"taxons",
         "average_precision",
         "average_recall",
         "average_weighted_precision",
@@ -72,6 +72,7 @@ def main(input_files: Iterable) -> pd.DataFrame:
             else:
                 all_species_at_threshold_df = all_species_at_threshold_df.append(df)
 
+
         protein_count = all_species_at_threshold_df.shape[0]
 
         average_precision = (
@@ -88,6 +89,13 @@ def main(input_files: Iterable) -> pd.DataFrame:
             all_species_at_threshold_df.loc[:, "weighted_recall"].sum() / protein_count
         )
 
+        average_ru = (
+                all_species_at_threshold_df.loc[:, "ru"].sum() / protein_count
+        )
+        average_mi = (
+                all_species_at_threshold_df.loc[:, "mi"].sum() / protein_count
+        )
+
         results_df.loc[threshold, "ontology"] = all_species_at_threshold_df.iloc[
             0
         ].ontology
@@ -97,9 +105,11 @@ def main(input_files: Iterable) -> pd.DataFrame:
             threshold, "average_weighted_precision"
         ] = average_weighted_precision
         results_df.loc[threshold, "average_weighted_recall"] = average_weighted_recall
+        results_df.loc[threshold, "average_ru"] = average_ru
+        results_df.loc[threshold, "average_mi"] = average_mi
 
-        taxons = ",".join(set(all_species_at_threshold_df.loc[:, "taxon"]))
-        results_df.loc[threshold, "taxons"] = taxons
+        #taxons = ",".join(set(all_species_at_threshold_df.loc[:, "taxon"]))
+        #results_df.loc[threshold, "taxons"] = taxons
 
     return results_df
 
