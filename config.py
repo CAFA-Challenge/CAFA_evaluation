@@ -1,4 +1,4 @@
-# The 'list' files use non-standard short names, while the submitted predictions use official
+# The 'list' files use mnemonic short names, while the submitted predictions use
 # taxon IDs, so we need a way to translate between the two:
 taxonomy_map = {
     9606: 'HUMAN',
