@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def main(input_files: Iterable) -> pd.DataFrame:
+def evaluate_cross_species(input_files: Iterable) -> pd.DataFrame:
     """Computes evaluation average metrics across species
 
     Generates a pandas DataFrame with this form:
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         for ssf in species_specific_files:
             print(f"\t{ssf}")
 
-        metrics_df = main(input_files=species_specific_files)
+        metrics_df = evaluate_cross_species(input_files=species_specific_files)
         print(metrics_df.to_markdown(tablefmt='grid'))
         print("\n")
 
