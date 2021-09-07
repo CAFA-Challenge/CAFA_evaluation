@@ -2,8 +2,7 @@ prediction_filepath: data/predictions2
 benchmark_filepath: data/parsed_benchmark
 predictor_group_name: ExamplePredictionsLab1
 model_id: 1
-ontologies: [CCO,] # BPO, MFO]
-
+ontologies: [CCO, BPO, MFO]
 
 benchmark_json_directory: ./data_v4/parsed_benchmark
 dag_ic_directory: ./data_v3/dag_ia
@@ -16,9 +15,6 @@ prediction_file_delimiter: "\t"
 prediction_file_header_line_count: 4
 knowledge_type: 1
 propagation_df_directory: ./data/propagation
-#output_directory: ./data2
 
 raw_benchmark_path:  ./data/benchmark/raw
-#dag_df_directory_filepath = f"../code/CLEAN/v6/data/propagation/"  # propagation_map_df_{namespace.upper()}.pkl"
-#dag_df_directory_filepath = "./data_v3/propagation/"
 propagation_map_directory: ./data_v3/propagation/
