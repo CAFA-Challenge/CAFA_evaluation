@@ -24,7 +24,8 @@ from config import taxonomy_map
 
 def main(
     root_benchmark_path_str: str,
-    dag_df_directory_filepath: str,
+    propagation_df_directory_filepath: str,
+    #dag_df_directory_filepath: str,
     output_directory_filepath_str: str,
     knowledge_type: int = 1,  # either 1 for partial or 2 for none
     taxonomy_map: dict = {},
@@ -96,13 +97,13 @@ def main(
         Next, we want to propagate protein->term associations
         """
 
-        dag_df_filepath = (
-            Path(dag_df_directory_filepath)
+        propagation_df_filepath = (
+            Path(propagation_df_directory_filepath)
             / f"propagation_map_df_{namespace.upper()}.pkl"
         )
 
-        print(f"\tREADING {dag_df_filepath}")
-        dag_df = pd.read_pickle(dag_df_filepath)
+        print(f"\tREADING {propagation_df_filepath}")
+        propagation_df = pd.read_pickle(propagation_df_filepath)
 
         taxons = set([taxon for taxon in namespace_df.loc[:, "taxon"] if taxon != ""])
 
@@ -127,13 +128,13 @@ def main(
             # Construct a new DataFrame with the species and ontology specific proteins as indices
             # and all the terms in the ontology for columns:
             propagated_benchmark_df = pd.DataFrame(
-                index=benchmark_proteins, columns=dag_df.columns, data=np.nan
+                index=benchmark_proteins, columns=propagation_df.columns, data=np.nan
             )
 
             for key, row in taxon_namespace_df.iterrows():
                 # get the propagation columns (terms) from the dag DataFrame:
                 try:
-                    propagation_columns = dag_df.columns[dag_df.loc[row.term, :] == 1]
+                    propagation_columns = propagation_df.columns[propagation_df.loc[row.term, :] == 1]
                 except KeyError:
                     print(f"COULD NOT PROPAGATE {namespace} TERM {row.term}")
 
@@ -173,7 +174,7 @@ def main(
                 "benchmark_taxon": taxon,
                 "benchmark_taxon_id": taxonomy_map.get(taxon),
                 "benchmark_ontology": namespace,
-                "benchmark_ontology_term_count": len(dag_df.index),
+                "benchmark_ontology_term_count": len(propagation_df.index),
                 "protein_annotations": {},
             }
 
@@ -196,21 +197,26 @@ def main(
 
 
 if __name__ == "__main__":
-    delimiter = "\t"
-    root_benchmark_path_str = (
-        "/home/scott/Documents/MATLAB/CAFA2/benchmark/groundtruth/CAFA3/"
-    )
-    root_benchmark_path_str = "./data/benchmark/raw"
-    dag_df_directory_filepath = f"../code/CLEAN/v6/data/propagation/"  # propagation_map_df_{namespace.upper()}.pkl"
-    dag_df_directory_filepath = "./data/propagation/"
-    knowledge_type = 1
-    output_directory_filepath = "./data/parsed_benchmark"
+    import sys
+    import yaml
 
-    main(
-        root_benchmark_path_str=root_benchmark_path_str,
-        dag_df_directory_filepath=dag_df_directory_filepath,
-        output_directory_filepath_str=output_directory_filepath,
-        knowledge_type=knowledge_type,
-        taxonomy_map=taxonomy_map,
-        delimiter=delimiter,
-    )
+    config_filepath = sys.argv[1]
+
+    with open(config_filepath, "r") as config_handle:
+        config = yaml.load(config_handle, Loader=yaml.BaseLoader)
+        root_benchmark_path_str = config.get("raw_benchmark_path")
+        propagation_directory = config.get("propagation_map_directory")
+
+        knowledge_type = config.get("knowledge_type")
+        #output_directory_filepath = "./data_v3/parsed_benchmark"
+        output_directory_filepath = config.get("benchmark_json_directory")
+
+        main(
+            root_benchmark_path_str=root_benchmark_path_str,
+            propagation_df_directory_filepath=propagation_directory,
+            #dag_df_directory_filepath=dag_df_directory_filepath,
+            output_directory_filepath_str=output_directory_filepath,
+            knowledge_type=knowledge_type,
+            taxonomy_map=taxonomy_map,
+            #delimiter=delimiter,
+        )
