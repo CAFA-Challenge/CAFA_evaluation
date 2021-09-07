@@ -108,4 +108,33 @@ for an example of the necessary configuration keys and values. The syntax for ru
     ```
    > It should be noted, that not all possible thresholds are covered. Instead, only threshold values from the raw prediction data are used. This minimizes the size of the DataFrames by omitting what would be redundant data.  
 
-2. Once a DataFrame for each species/ontology pair has been generated, `evaluate_cross_species.py` can be used to compute per-ontology, cross-species metrics. This file uses the same yaml configuration file as `evaluate_species_prediction.py` in the previous step. 
+2. Once a DataFrame for each species/ontology pair has been generated, `evaluate_cross_species.py` can be used to compute per-ontology, cross-species metrics. This file uses the same yaml configuration file as `evaluate_species_prediction.py` in the previous step and should be called similarly: `python evaluate_cross_species.py ./<my_config.yml>`.
+
+    Example usage and output:
+    ```shell script
+    $ python evaluate_cross_species.py ./parser_config_ExamplePredictionsLab1.yml
+
+    CCO
+    READING
+        data_v3/parsed_predictions/ExamplePredictionsLab1/dataframes/MOUSE_cco_1.pkl
+        data_v3/parsed_predictions/ExamplePredictionsLab1/dataframes/DICDI_cco_1.pkl
+        data_v3/parsed_predictions/ExamplePredictionsLab1/dataframes/ARATH_cco_1.pkl
+        data_v3/parsed_predictions/ExamplePredictionsLab1/dataframes/SALTY_cco_1.pkl
+        data_v3/parsed_predictions/ExamplePredictionsLab1/dataframes/SCHPO_cco_1.pkl
+        data_v3/parsed_predictions/ExamplePredictionsLab1/dataframes/HUMAN_cco_1.pkl
+    +-------------+------------+---------------------+------------------+------------------------------+---------------------------+--------------+--------------+
+    |   threshold | ontology   |   average_precision |   average_recall |   average_weighted_precision |   average_weighted_recall |   average_ru |   average_mi |
+    +=============+============+=====================+==================+==============================+===========================+==============+==============+
+    |        0.01 | cco        |            0.643903 |         0.440687 |                     0.54138  |                  0.301066 |      5.02405 |     1.62864  |
+    +-------------+------------+---------------------+------------------+------------------------------+---------------------------+--------------+--------------+
+    |        0.02 | cco        |            0.647209 |         0.438858 |                     0.544674 |                  0.298133 |      5.04314 |     1.51864  |
+    +-------------+------------+---------------------+------------------+------------------------------+---------------------------+--------------+--------------+
+    |        0.03 | cco        |            0.650555 |         0.436745 |                     0.54804  |                  0.294881 |      5.06369 |     1.41671  |
+    +-------------+------------+---------------------+------------------+------------------------------+---------------------------+--------------+--------------+
+    |        0.04 | cco        |            0.653858 |         0.434857 |                     0.551349 |                  0.291858 |      5.08317 |     1.32971  |
+    +-------------+------------+---------------------+------------------+------------------------------+---------------------------+--------------+--------------+
+    |        0.05 | cco        |            0.657184 |         0.43273  |                     0.554715 |                  0.288631 |      5.10292 |     1.24833  |
+    +-------------+------------+---------------------+------------------+------------------------------+---------------------------+--------------+--------------+
+   ...
+
+    ```
