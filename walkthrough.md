@@ -78,9 +78,25 @@ for an example of the necessary configuration keys and values. The syntax for ru
     
 ## Compute Evaluation Metrics
 
-1. Run `evaluate_species_prediction.py`. This creates a pickled Pandas DataFrame for every prediction json file that has a corresponding (matching species and ontology) benchmark json file. These files will be created in a directory corresponding with the `predictions_dataframes_directory` key in the configuration file. The syntax for calling this file is `python evaluate_species_prediction <my_config.yml>`.
+1. Run `evaluate_species_prediction.py`. This creates a pickled Pandas DataFrame for every prediction json file that has a corresponding (matching species and ontology) benchmark json file. The syntax for calling this file is `python evaluate_species_prediction <my_config.yml>`.
 
-    The created DataFrames have the form where the keys are a protein ID and threshold pairing:
+    These files will be created in a directory corresponding with the `predictions_dataframes_directory` key in the configuration file. Once successfully run, your `predictions_dataframes_directory` should look something like this: 
+    ```bash
+   -rw-r--r-- 1 szarecor sudo 2147366 Aug 31 15:32 ARATH_cco_1.pkl
+    -rw-r--r-- 1 szarecor sudo  913375 Aug 31 15:33 ARATH_mfo_1.pkl
+    -rw-r--r-- 1 szarecor sudo   64061 Aug 31 15:32 DICDI_cco_1.pkl
+    -rw-r--r-- 1 szarecor sudo  383467 Aug 31 15:32 HUMAN_cco_1.pkl
+    -rw-r--r-- 1 szarecor sudo  122230 Aug 31 15:32 MOUSE_cco_1.pkl
+    -rw-r--r-- 1 szarecor sudo    6992 Aug 31 15:33 MYCGE_mfo_1.pkl
+    -rw-r--r-- 1 szarecor sudo    7357 Aug 31 15:33 RAT_mfo_1.pkl
+    -rw-r--r-- 1 szarecor sudo    6083 Aug 31 15:32 SALTY_bpo_1.pkl
+    -rw-r--r-- 1 szarecor sudo    2255 Aug 31 15:32 SALTY_cco_1.pkl
+    -rw-r--r-- 1 szarecor sudo    4807 Aug 31 15:32 SALTY_mfo_1.pkl
+    -rw-r--r-- 1 szarecor sudo    3027 Aug 31 15:32 SCHPO_cco_1.pkl
+    -rw-r--r-- 1 szarecor sudo    1685 Aug 31 15:32 YEAST_bpo_1.pkl
+   ```
+
+    Each DataFrame will have the following form where the keys are a protein ID and threshold pairing:
     ```
     |                         | ontology   |   taxon_id | taxon   |   tp_ia |   fp_ia |   fn_ia |   benchmark_ia |   ru |      mi |   weighted_precision |   weighted_recall |   tp |   fp |   fn |      tn |   precision |   recall |
     |:------------------------|:-----------|-----------:|:--------|--------:|--------:|--------:|---------------:|-----:|--------:|---------------------:|------------------:|-----:|-----:|-----:|--------:|------------:|---------:|
@@ -90,5 +106,6 @@ for an example of the necessary configuration keys and values. The syntax for ru
     | ('T100900000782', 0.04) | cco        |      10090 | MOUSE   |  23.523 | 10.8047 |       0 |         23.523 |    0 | 10.8047 |             0.685249 |                 1 |   54 |    9 |    0 | 3840.14 |    0.857143 |        1 |
     | ('T100900000782', 0.05) | cco        |      10090 | MOUSE   |  23.523 | 10.8047 |       0 |         23.523 |    0 | 10.8047 |             0.685249 |                 1 |   54 |    9 |    0 | 3840.14 |    0.857143 |        1 |
     ```
+   > It should be noted, that not all possible thresholds are covered. Instead, only threshold values from the raw prediction data are used. This minimizes the size of the DataFrames by omitting what would be redundant data.  
 
 2. Once a DataFrame for each species/ontology pair has been generated, `evaluate_cross_species.py` can be used to compute per-ontology, cross-species metrics. This file uses the same yaml configuration file as `evaluate_species_prediction.py` in the previous step. 
