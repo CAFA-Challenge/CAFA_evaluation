@@ -1,5 +1,3 @@
-# from generate_information_content_matrices.py:
-#obo_filepath: ./data/go_cafa3.obo
 obo_filepath: /media/airport/cafa3_submissions/go_cafa3.obo
 dag_directory: /media/airport/cafa3_submssions/test/dag_ia/
 propagation_map_directory: /media/airport/cafa3_submissions/test/propagation/
