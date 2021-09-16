@@ -4,8 +4,8 @@ predictor_group_name: ExamplePredictionsLab1
 model_id: 1
 ontologies: [CCO, BPO, MFO]
 
-benchmark_json_directory: ./data_v4/parsed_benchmark
-dag_ic_directory: ./data_v3/dag_ia
+benchmark_json_directory: ./debug/parsed_benchmark
+dag_ic_directory: ./example/dag_ia
 raw_predictions_directory: /media/airport/cafa3_submissions/ExamplePredictionsLab1
 predictions_json_directory: ./data_v3/parsed_predictions/ExamplePredictionsLab1/json
 predictions_dataframes_directory: ./data_v3/parsed_predictions/ExamplePredictionsLab1/dataframes
@@ -14,7 +14,9 @@ predictions_dataframes_directory: ./data_v3/parsed_predictions/ExamplePrediction
 prediction_file_delimiter: "\t"
 prediction_file_header_line_count: 4
 knowledge_type: 1
-propagation_df_directory: ./data/propagation
+propagation_df_directory: ../code2/example/propagation
 
-raw_benchmark_path:  ./data/benchmark/raw
-propagation_map_directory: ./data_v3/propagation/
+raw_benchmark_path:  ../code2/data/benchmark/raw
+
+# definitely used:
+#propagation_map_directory: ../code2/example/propagation/

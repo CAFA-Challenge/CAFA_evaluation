@@ -205,7 +205,7 @@ if __name__ == "__main__":
     with open(config_filepath, "r") as config_handle:
         config = yaml.load(config_handle, Loader=yaml.BaseLoader)
         root_benchmark_path_str = config.get("raw_benchmark_path")
-        propagation_directory = config.get("propagation_map_directory")
+        propagation_directory = config.get("propagation_df_directory")
 
         knowledge_type = config.get("knowledge_type")
         #output_directory_filepath = "./data_v3/parsed_benchmark"
