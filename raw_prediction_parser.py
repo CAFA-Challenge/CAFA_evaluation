@@ -16,6 +16,9 @@ def get_propagated_prediction_dataframe(
     # Create a DataFrame joining the 'raw' prediction data with the DAG propagation DataFrame:
     term_ids = dag_df.columns.values
 
+    if prediction_df.shape[0] == 0:
+        return prediction_df
+
     prediction_df = pd.merge(
         prediction_df, dag_df, right_index=True, left_on="term", how="left"
     )
