@@ -236,12 +236,15 @@ def get_confusion_matrix_dataframe(
                 k for k, v in predicted_terms.items() if v >= threshold
             }
             benchmark_protein_annotation = set(benchmark_annotations.get(protein))
+            if len(benchmark_protein_annotation) == 0:
+                # If there are no BENCHMARK annotated terms for the protein of interest,
+                # there is no reason to continue.
+                continue
 
             confusion_matrix = calculate_confusion_matrix(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
             )
-            # print(confusion_matrix)
             protein_and_threshold_df.loc[protein, threshold].tp = confusion_matrix["TP"]
             protein_and_threshold_df.loc[protein, threshold].fp = confusion_matrix["FP"]
             protein_and_threshold_df.loc[protein, threshold].fn = confusion_matrix["FN"]
@@ -257,7 +260,6 @@ def get_confusion_matrix_dataframe(
                 "recall"
             ]
 
-            #print(threshold, protein)
             ia_sums = calculate_weighted_confusion_matrix(
                 predicted_terms=predicted_annotations,
                 benchmark_terms=benchmark_protein_annotation,
@@ -302,6 +304,8 @@ def get_confusion_matrix_dataframe(
 def evaluate_species(
     prediction_filepath_str: str, benchmark_filepath_str: str, ia_df: pd.DataFrame
 ) -> pd.DataFrame:
+
+
     with open(prediction_filepath_str, "r") as prediction_handle:
         predictions = json.load(prediction_handle)
 
