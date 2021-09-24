@@ -16,9 +16,6 @@ def get_propagated_prediction_dataframe(
     # Create a DataFrame joining the 'raw' prediction data with the DAG propagation DataFrame:
     term_ids = dag_df.columns.values
 
-    if prediction_df.shape[0] == 0:
-        return prediction_df
-
     prediction_df = pd.merge(
         prediction_df, dag_df, right_index=True, left_on="term", how="left"
     )
@@ -180,12 +177,16 @@ def main(
 
             # For empty predictions for the given benchmark, there is not reason to continue:
             if raw_prediction_df.shape[0] == 0:
-                print(f"\tSKIPPING EMPTY DATAFRAME FOR {prediction_file}")
+                # This is an empty DataFrame, likely b/c the intersection of predicted proteins and benchmark proteins
+                # is an empty set.
+                print(f"\tSKIPPING EMPTY DATAFRAME FOR {ontology} AND {prediction_file}")
                 continue
 
             raw_prediction_df = get_propagated_prediction_dataframe(
                 prediction_df=raw_prediction_df, dag_df=dag_df
             )
+
+
 
             """
             At this point, we have a DataFrame with this form:
