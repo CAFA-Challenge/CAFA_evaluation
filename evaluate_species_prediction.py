@@ -24,6 +24,8 @@ def initialize_proteins_and_thresholds_dataframe(
         "fp_ia",
         "fn_ia",
         "benchmark_ia",
+        "ru",
+        "mi",
         "weighted_precision",
         "weighted_recall",
         "tp",
@@ -46,6 +48,8 @@ def initialize_proteins_and_thresholds_dataframe(
         "fp_ia": "float",
         "fn_ia": "float",
         "benchmark_ia": "float",
+        "ru": "float",
+        "mi": "float",
         "weighted_precision": "float",
         "weighted_recall": "float",
         "tp": "float",
@@ -132,6 +136,7 @@ def calculate_weighted_confusion_matrix(
 
     #print(get_rumi(predicted_terms, benchmark_terms, ia_df))
     #predicted_terms: set, benchmark_terms: set, weighted_graph
+    ru, mi = get_rumi(predicted_terms, benchmark_terms, ia_df)
 
     return {
         "TP": tp_info_accretion,
@@ -139,7 +144,9 @@ def calculate_weighted_confusion_matrix(
         "FN": fn_info_accretion,
         "benchmark_ia": benchmark_info_accretion,
         "weighted_precision": weighted_precision,
-        "weighted_recall": weighted_recall
+        "weighted_recall": weighted_recall,
+        "ru": ru,
+        "mi": mi,
     }
 
 
@@ -268,6 +275,8 @@ def get_confusion_matrix_dataframe(
             protein_and_threshold_df.loc[protein, threshold].tp_ia = ia_sums["TP"]
             protein_and_threshold_df.loc[protein, threshold].fp_ia = ia_sums["FP"]
             protein_and_threshold_df.loc[protein, threshold].fn_ia = ia_sums["FN"]
+            protein_and_threshold_df.loc[protein, threshold].ru = ia_sums["ru"]
+            protein_and_threshold_df.loc[protein, threshold].mi = ia_sums["mi"]
             protein_and_threshold_df.loc[protein, threshold].benchmark_ia = ia_sums[
                 "benchmark_ia"
             ]
