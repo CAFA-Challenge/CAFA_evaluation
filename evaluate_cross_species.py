@@ -130,8 +130,8 @@ if __name__ == "__main__":
     for ontology in ontologies:
         input_filename_pattern = f"*_{ontology.lower()}_*.pkl"
         species_specific_files = list(dataframe_read_directory.glob(input_filename_pattern))
-        print(f"\n{ontology}")
-        print("READING")
+        print(f"\n PROCESSING {ontology}")
+        print("READING SPECIES-SPECIFIC FILES:")
         for ssf in species_specific_files:
             print(f"\t{ssf}")
 
