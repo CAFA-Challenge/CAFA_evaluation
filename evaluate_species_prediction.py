@@ -122,10 +122,20 @@ def calculate_weighted_confusion_matrix(
     In practice, this will be called for the predicted_terms @ a specific threshold.
     """
     cm_terms = get_confusion_matrix_terms(predicted_terms, benchmark_terms)
-    tp_info_accretion = sum([ia_df.loc[term, "ia"] for term in cm_terms.get("TP", [])])
-    fp_info_accretion = sum([ia_df.loc[term, "ia"] for term in cm_terms.get("FP", [])])
-    fn_info_accretion = sum([ia_df.loc[term, "ia"] for term in cm_terms.get("FN", [])])
-    benchmark_info_accretion = ia_df.loc[benchmark_terms, "ia"].sum()
+
+    ia_go_terms = ia_df.index
+
+    # Although there should not be a case where a predicted term is not found in the ia_df because they
+    # have both been generated based on the same obo file, we can double-check that here rather than blindly
+    # selecting (.loc[...). This was added, perhaps temporarily, on 20210928 by szarecor
+    tp_info_accretion = sum([0 if term not in ia_go_terms else ia_df.loc[term, "ia"] for term in cm_terms.get("TP", [])])
+    fp_info_accretion = sum([0 if term not in ia_go_terms else ia_df.loc[term, "ia"] for term in cm_terms.get("FP", [])])
+    fn_info_accretion = sum([0 if term not in ia_go_terms else ia_df.loc[term, "ia"] for term in cm_terms.get("FN", [])])
+
+    # Adding a filter to exclude terms NOT of the same ontological namespace,
+    # I am not sure why this is necessary at this point in the process:
+    benchmark_terms_filtered = benchmark_terms.intersection(ia_df.index)
+    benchmark_info_accretion = ia_df.loc[benchmark_terms_filtered, "ia"].sum()
 
     try:
         weighted_precision = tp_info_accretion / (tp_info_accretion + fp_info_accretion)
@@ -134,9 +144,7 @@ def calculate_weighted_confusion_matrix(
 
     weighted_recall = tp_info_accretion / benchmark_info_accretion
 
-    #print(get_rumi(predicted_terms, benchmark_terms, ia_df))
-    #predicted_terms: set, benchmark_terms: set, weighted_graph
-    ru, mi = get_rumi(predicted_terms, benchmark_terms, ia_df)
+    ru, mi = get_rumi(predicted_terms, benchmark_terms_filtered, ia_df)
 
     return {
         "TP": tp_info_accretion,
@@ -385,6 +393,7 @@ def main(
         benchmark_files = list(benchmark_path.glob(f"*{ontology}*json"))
 
         for benchmark_file in benchmark_files:
+
             _, taxon_str, taxon_id, *rest = benchmark_file.stem.split("_")
             try:
                 taxon_id = int(taxon_id)
@@ -422,12 +431,6 @@ if __name__ == "__main__":
 
         dataframe_write_directory = config.get("predictions_dataframes_directory")
 
-        print(prediction_filepath_str)
-        print(benchmark_filepath_str)
-        print(dag_directory_filepath_str)
-        print(model_id)
-        print(ontologies)
-
         for taxon_result_df in main(
             prediction_filepath_str,
             benchmark_filepath_str,
@@ -451,5 +454,4 @@ if __name__ == "__main__":
             write_path = output_directory / f"{taxon}_{ontology}_{model_id}.pkl"
             print(f"WRITING {write_path}")
             taxon_result_df.to_pickle(write_path)
-
             print("\n\n")
