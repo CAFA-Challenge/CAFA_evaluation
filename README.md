@@ -1,7 +1,7 @@
 
 # CAFA Predictions Evaluation 
 
-Test data is available in FigShare: https://figshare.com/account/projects/123691/articles/16695214
+Test data are available in FigShare: https://figshare.com/account/projects/123691/articles/16695214
 
 This repository is a collection of code for evaluating CAFA predictions
 
