@@ -5,6 +5,9 @@ Test data is available in FigShare: https://figshare.com/account/projects/123691
 
 This repository is a collection of code for evaluating CAFA predictions
 
+See also the [walkthrough example](https://github.com/CAFA-Challenge/CAFA_evaluation/blob/master/walkthrough.md)
+
+
 To use the code, the steps are:
 1. Obtain or generate propagation Pandas DataFrame files based on the relevant CAFA challenge obo file. These files are pickled
 DataFrames, one per relevant GO ontology namespace that are used for propagating both benchmark and prediction annotation data.
@@ -25,3 +28,6 @@ This step uses `raw_prediction_parser.py` in conjunction with the same configura
 5. Evaluate the prediction data on a per-species, per-ontology basis against the benchmark data using `evaluate_species_prediction.py`
 
 6. Generate cross-species evaluation metrics using `evaluate_cross_species.py`
+
+
+
