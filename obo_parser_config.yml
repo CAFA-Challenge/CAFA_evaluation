@@ -1,19 +1,19 @@
-obo_filepath: /media/airport/cafa3_submissions/go_cafa3.obo
-dag_directory: /media/airport/cafa3_submssions/test/dag_ia/
-propagation_map_directory: /media/airport/cafa3_submissions/test/propagation/
+obo_filepath: .\\cafa_test_data\\go.obo
+dag_directory: .\\cafa_test_data\\dag_ia\\
+propagation_map_directory: .\\cafa_test_data\\propagation\\
 
 ontologies:
   - short_name: CCO
     long_name: cellular_component
-    raw_benchmark_filepath: /media/airport/cafa3_submissions/test/benchmark/raw/leafonly_CCO.txt
-    propagation_df_filepath: /media/airport/cafa3_submissions/test/propagation/propagation_map_df_CCO.pkl
+    raw_benchmark_filepath: .\\cafa_test_data\\benchmark\\raw\\leafonly_CCO.txt
+    propagation_df_filepath: .\\cafa_test_data\\propagation\\propagation_map_df_CCO.pkl
 
   - short_name: MFO
     long_name: molecular_function
-    raw_benchmark_filepath: /media/airport/cafa3_submissions/test/benchmark/raw/leafonly_MFO.txt
-    propagation_df_filepath: /media/airport/cafa3_submissions/test/propagation/propagation_map_df_MFO.pkl
+    raw_benchmark_filepath: .\\cafa_test_data\\benchmark\\raw\\leafonly_MFO.txt
+    propagation_df_filepath: .\\cafa_test_data\\propagation\\propagation_map_df_MFO.pkl
 
   - short_name: BPO
     long_name: biological_process
-    raw_benchmark_filepath: /media/airport/cafa3_submissions/test/benchmark/raw/leafonly_BPO.txt
-    propagation_df_filepath: /media/airport/cafa3_submissions/test/propagation/propagation_map_df_BPO.pkl
+    raw_benchmark_filepath: .\\cafa_test_data\\benchmark\\raw\\leafonly_BPO.txt
+    propagation_df_filepath: .\\cafa_test_data\\propagation\\propagation_map_df_BPO.pkl
