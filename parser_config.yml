@@ -1,17 +1,20 @@
-#prediction_filepath_str: data/ZhangFreddolinoLab/ZhangFreddolinoLab_1_7227_go_CCO.json
-#benchmark_filepath_str: data/benchmark/CCO_DROME_7227_benchmark.json
-prediction_filepath: data/predictions2
-benchmark_filepath: data/parsed_benchmark
-predictor_group_name: ZhangFreddolinoLab
+prediction_filepath: .\\cafa_test_data\\ExamplePredictionsLab1
+benchmark_filepath: .\\cafa_test_data\\benchmark\\parsed_benchmark\\
+predictor_group_name: ExamplePredictionsLab1
 model_id: 1
-ontologies: [CCO, BPO]
+ontologies: [CCO, BPO, MFO]
 
+benchmark_json_directory: .\\cafa_test_data\\benchmark\\parsed_benchmark
+dag_ic_directory: .\\cafa_test_data\\dag_ia\\
+raw_predictions_directory: .\\cafa_test_data\\ExamplePredictionsLab1
+predictions_json_directory: .\\cafa_test_data\\parsed_predictions\\ExamplePredictionsLab1\\json
+predictions_dataframes_directory: .\\cafa_test_data\\parsed_predictions\\ExamplePredictionsLab1\\dataframes
 
-benchmark_directory: ./data/parsed_benchmark
-dag_directory: ./example/dag_ia
-raw_predictions_directory: /media/airport/cafa3_submissions/ZhangFreddolinoLab
-predictions_json_directory: ./data2
-prediction_file_delimiter: \t
+# delimiter needs to be quoted:
+prediction_file_delimiter: "\t"
+prediction_file_header_line_count: 4
 knowledge_type: 1
-propagation_df_directory: ./data/propagation
-#output_directory: ./data2
+propagation_df_directory: .\\cafa_test_data\\propagation\\
+
+raw_benchmark_path:  .\\cafa_test_data\\benchmark\\raw
+propagation_map_directory: .\\cafa_test_data\\propagation\\
